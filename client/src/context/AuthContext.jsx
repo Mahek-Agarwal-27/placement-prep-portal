@@ -1,58 +1,99 @@
 /**
- * context/AuthContext.jsx — Global authentication state
+ * context/AuthContext.jsx — Global authentication state provider
  *
- * Provides user state and auth actions (login, signup, logout)
- * to the entire React tree.
- *
- * NOTE: Full implementation will be done in Phase 2.
- *       This file is scaffolded here so App.jsx can import it cleanly.
+ * Syncs user auth credentials with localStorage and resolves profile data.
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import authService from '../services/authService';
 
-// Create the context object
 const AuthContext = createContext(null);
 
-/**
- * AuthProvider — Wrap your app with this to provide auth state globally.
- */
 export const AuthProvider = ({ children }) => {
-  const [user,    setUser]    = useState(null);
-  const [token,   setToken]   = useState(localStorage.getItem('token') || null);
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
 
-  // On mount: restore user from localStorage if a token exists
+  // Load user profile on mount if token exists
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
+    const fetchUserProfile = async () => {
+      if (token) {
+        try {
+          const res = await authService.getProfile();
+          if (res.success) {
+            setUser(res.data);
+          } else {
+            // Token might be corrupted/expired
+            handleLogout();
+          }
+        } catch (error) {
+          console.error('Failed to load profile on mount:', error);
+          handleLogout();
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchUserProfile();
+  }, [token]);
 
   /**
-   * login — store token and user in state + localStorage
-   * @param {string} token - JWT token from backend
-   * @param {object} user  - User data object from backend
+   * Action: Signup handler
    */
-  const login = (token, user) => {
-    setToken(token);
-    setUser(user);
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+  const handleSignup = async (userData) => {
+    try {
+      const res = await authService.signup(userData);
+      if (res.success && res.data.token) {
+        setToken(res.data.token);
+        setUser(res.data.user);
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+      }
+      return res;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || 'Registration failed';
+      throw new Error(errorMsg);
+    }
   };
 
   /**
-   * logout — clear all auth state and redirect to login
+   * Action: Login handler
    */
-  const logout = () => {
+  const handleLogin = async (credentials) => {
+    try {
+      const res = await authService.login(credentials);
+      if (res.success && res.data.token) {
+        setToken(res.data.token);
+        setUser(res.data.user);
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+      }
+      return res;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || 'Login failed';
+      throw new Error(errorMsg);
+    }
+  };
+
+  /**
+   * Action: Logout handler
+   */
+  const handleLogout = () => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
-  const value = { user, token, loading, login, logout, isAuthenticated: !!token };
+  const value = {
+    user,
+    token,
+    loading,
+    signup: handleSignup,
+    login: handleLogin,
+    logout: handleLogout,
+    isAuthenticated: !!token,
+  };
 
   return (
     <AuthContext.Provider value={value}>
@@ -61,10 +102,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-/**
- * useAuth — custom hook for consuming auth context
- * Usage: const { user, login, logout } = useAuth();
- */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used inside <AuthProvider>');
