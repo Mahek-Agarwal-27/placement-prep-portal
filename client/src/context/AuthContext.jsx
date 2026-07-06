@@ -76,6 +76,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
+   * Action: Update profile handler
+   */
+  const handleUpdateProfile = async (profileData) => {
+    try {
+      const res = await authService.updateProfile(profileData);
+      if (res.success && res.data) {
+        setUser(res.data);
+        localStorage.setItem('user', JSON.stringify(res.data));
+      }
+      return res;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || 'Profile update failed';
+      throw new Error(errorMsg);
+    }
+  };
+
+  /**
    * Action: Logout handler
    */
   const handleLogout = () => {
@@ -92,6 +109,7 @@ export const AuthProvider = ({ children }) => {
     signup: handleSignup,
     login: handleLogin,
     logout: handleLogout,
+    updateProfile: handleUpdateProfile,
     isAuthenticated: !!token,
   };
 

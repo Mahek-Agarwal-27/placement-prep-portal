@@ -7,6 +7,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/ProfilePage';
+import DSATrackerPage from './pages/DSATrackerPage';
 
 // ----- Root App Component -----
 function App() {
@@ -27,6 +29,23 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dsa-tracker"
+            element={
+              <ProtectedRoute>
+                <DSATrackerPage />
               </ProtectedRoute>
             }
           />

@@ -44,11 +44,11 @@ app.use(express.urlencoded({ extended: true }));
 // Serve files uploaded via Multer (e.g. resumes, notes)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ── API Routes (placeholders — will be mounted in later phases) ───────────────
+// ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth',      require('./routes/authRoutes'));
+app.use('/api/questions', require('./routes/questionRoutes')); // Phase 4: DSA Tracker
+app.use('/api/tasks',     require('./routes/taskRoutes'));      // Phase 5: Study Planner
 // app.use('/api/users',     require('./routes/userRoutes'));
-// app.use('/api/questions', require('./routes/questionRoutes'));
-// app.use('/api/tasks',     require('./routes/taskRoutes'));
 // app.use('/api/notes',     require('./routes/noteRoutes'));
 // app.use('/api/resumes',   require('./routes/resumeRoutes'));
 // app.use('/api/interview', require('./routes/interviewRoutes'));

@@ -1,12 +1,24 @@
 /**
  * pages/DashboardPage.jsx — Dashboard Landing
+ * 
+ * Includes the statistics layout, streak display, and highly professional 
+ * visual placeholders for DSA Progress, Study Planner, Resume Score, and Interview Prep.
  */
 
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
+
+  // Mock data for visual details on placeholder cards
+  const mockDSABreakdown = { easy: 12, medium: 8, hard: 2 };
+  const mockAgenda = [
+    { id: 1, title: 'Revise Graphs (DFS & BFS)', time: '09:00 AM', status: 'completed' },
+    { id: 2, title: 'Solve 2 Medium Array Questions', time: '02:00 PM', status: 'pending' },
+    { id: 3, title: 'Read System Design Basics', time: '06:00 PM', status: 'pending' }
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -20,6 +32,17 @@ const DashboardPage = () => {
             Beta
           </span>
         </div>
+        <nav className="hidden sm:flex items-center gap-5 text-sm font-semibold">
+          <Link to="/dashboard" className="text-indigo-400 border-b-2 border-indigo-500 pb-1">
+            Dashboard
+          </Link>
+          <Link to="/dsa-tracker" className="text-slate-400 hover:text-white transition-colors">
+            DSA Tracker
+          </Link>
+          <Link to="/profile" className="text-slate-400 hover:text-white transition-colors">
+            Profile
+          </Link>
+        </nav>
         <div className="flex items-center gap-4">
           <span className="text-slate-300 text-sm hidden md:inline">
             Hello, <strong className="text-white">{user?.name}</strong>
@@ -32,8 +55,26 @@ const DashboardPage = () => {
 
       {/* Hero Welcome Banner */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-6 md:p-8 space-y-8 animate-fade-in">
-        <section className="bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-2">
+        {/* Profile incomplete banner if profile is empty */}
+        {(!user?.profile?.college || !user?.profile?.skills || user.profile.skills.length === 0) && (
+          <div className="p-4 rounded-xl bg-indigo-950/40 border border-indigo-800/60 text-indigo-300 text-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400 flex-shrink-0 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Your profile looks a bit thin! Complete your academic profile and list your technical skills.</span>
+            </div>
+            <Link to="/profile" className="btn-primary py-1.5 px-4 text-xs shrink-0">
+              Complete Profile
+            </Link>
+          </div>
+        )}
+
+        <section className="bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+          {/* Decorative design glow */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500 rounded-full blur-[120px] opacity-10 pointer-events-none"></div>
+
+          <div className="space-y-2 relative">
             <h2 className="text-3xl font-extrabold text-white tracking-tight">
               Ready for your next step, {user?.name}?
             </h2>
@@ -41,13 +82,16 @@ const DashboardPage = () => {
               Welcome to the placement portal. Start tracking your DSA questions, prepare structured calendar study tasks, analyze resumes, and generate AI-driven roadmap lists.
             </p>
           </div>
-          <div className="flex gap-4">
-            <div className="card text-center py-4 px-6 border-slate-800 bg-slate-900/80">
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
-                Streak
+          <div className="flex gap-4 relative shrink-0 w-full md:w-auto justify-center">
+            <div className="card text-center py-4 px-6 border-slate-800 bg-slate-900/80 flex flex-col justify-center items-center">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">
+                Current Streak
               </p>
-              <p className="text-3xl font-extrabold text-amber-500">
-                🔥 {user?.streak?.currentStreak || 0} days
+              <p className="text-3xl font-extrabold text-amber-500 animate-pulse flex items-center gap-1">
+                🔥 {user?.streak?.currentStreak || 0}
+              </p>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Longest: {user?.streak?.longestStreak || 0} days
               </p>
             </div>
           </div>
@@ -56,29 +100,238 @@ const DashboardPage = () => {
         {/* Temporary Quick Stats */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="card">
-            <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
-              DSA Solved
-            </h3>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                DSA Solved
+              </h3>
+              <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-900">
+                Active
+              </span>
+            </div>
             <p className="text-4xl font-extrabold text-white">
               {user?.stats?.totalDSASolved || 0} <span className="text-lg text-slate-500 font-normal">problems</span>
             </p>
           </div>
           <div className="card">
-            <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
-              Tasks Completed
-            </h3>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                Tasks Completed
+              </h3>
+              <span className="text-[10px] text-indigo-400 font-semibold bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-900">
+                Scheduled
+              </span>
+            </div>
             <p className="text-4xl font-extrabold text-white">
               {user?.stats?.totalTasksDone || 0} <span className="text-lg text-slate-500 font-normal">done</span>
             </p>
           </div>
           <div className="card">
-            <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
-              Study Time
-            </h3>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                Study Time
+              </h3>
+              <span className="text-[10px] text-violet-400 font-semibold bg-violet-950/80 px-2 py-0.5 rounded border border-violet-900">
+                Log Time
+              </span>
+            </div>
             <p className="text-4xl font-extrabold text-white">
               {user?.stats?.totalStudyHours || 0} <span className="text-lg text-slate-500 font-normal">hours</span>
             </p>
           </div>
+        </section>
+
+        {/* Feature Dashboard Placeholders Grid */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+          
+          {/* Card 1: DSA Progress Placeholder */}
+          <div className="card bg-slate-900 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500 rounded-full blur-[70px] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-950 text-emerald-400 flex items-center justify-center font-bold">
+                    &lt;/&gt;
+                  </div>
+                  <h4 className="font-bold text-white text-lg">DSA Progress Tracker</h4>
+                </div>
+                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+                  Phase 4
+                </span>
+              </div>
+              <p className="text-slate-450 text-xs mb-6">
+                Keep track of your solved DSA problems from LeetCode, Codeforces, or GeeksforGeeks. Get category analysis and difficulty logs.
+              </p>
+
+              {/* Visual mock graph */}
+              <div className="space-y-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    Easy
+                  </span>
+                  <span>{mockDSABreakdown.easy} Solved</span>
+                </div>
+                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: '60%' }}></div>
+                </div>
+
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-amber-500 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    Medium
+                  </span>
+                  <span>{mockDSABreakdown.medium} Solved</span>
+                </div>
+                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-amber-500 h-full rounded-full" style={{ width: '40%' }}></div>
+                </div>
+
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-rose-500 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    Hard
+                  </span>
+                  <span>{mockDSABreakdown.hard} Solved</span>
+                </div>
+                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-rose-500 h-full rounded-full" style={{ width: '15%' }}></div>
+                </div>
+              </div>
+            </div>
+            <Link to="/dsa-tracker" className="btn-primary w-full justify-center text-xs mt-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Open DSA Tracker
+            </Link>
+          </div>
+
+          {/* Card 2: Study Planner Placeholder */}
+          <div className="card bg-slate-900 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500 rounded-full blur-[70px] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-950 text-indigo-400 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-white text-lg">Daily Study Planner</h4>
+                </div>
+                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+                  Phase 5
+                </span>
+              </div>
+              <p className="text-slate-450 text-xs mb-4">
+                Organize your study calendar. Set custom preparation tasks, log daily timings, and stay on track with automated reminders.
+              </p>
+
+              {/* Visual mock list */}
+              <div className="space-y-2.5 bg-slate-950/40 border border-slate-800/80 rounded-xl p-3">
+                {mockAgenda.map(task => (
+                  <div key={task.id} className="flex items-center justify-between text-xs pb-2 border-b border-slate-900/60 last:border-b-0 last:pb-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${task.status === 'completed' ? 'bg-emerald-500' : 'bg-slate-700'}`}></span>
+                      <span className={`font-medium ${task.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-350'}`}>{task.title}</span>
+                    </div>
+                    <span className="text-slate-500 text-[10px]">{task.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button className="btn-secondary w-full justify-center text-xs mt-4 group-hover:border-indigo-500/40 transition-colors pointer-events-none opacity-50">
+              Study Planner coming in Phase 5
+            </button>
+          </div>
+
+          {/* Card 3: Resume Score Placeholder */}
+          <div className="card bg-slate-900 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500 rounded-full blur-[70px] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-violet-950 text-violet-400 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-white text-lg">AI Resume Analyzer</h4>
+                </div>
+                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+                  Phase 7
+                </span>
+              </div>
+              <p className="text-slate-450 text-xs mb-6">
+                Upload your resume, parse details, and compare it with current job descriptions. Receive Gemini-powered optimization scores and grammar audits.
+              </p>
+
+              {/* Visual mock score circle */}
+              <div className="flex items-center gap-6 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4">
+                <div className="relative w-16 h-16 flex items-center justify-center bg-violet-955 rounded-full border-4 border-violet-900 border-t-violet-500 shadow-md">
+                  <span className="text-white font-extrabold text-sm">82%</span>
+                </div>
+                <div className="space-y-1 text-xs text-slate-400">
+                  <p className="text-white font-bold text-sm">Review Metrics</p>
+                  <p className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Length & Layout
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Keyword Matching
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Bullet-point Impact
+                  </p>
+                </div>
+              </div>
+            </div>
+            <button className="btn-secondary w-full justify-center text-xs mt-4 group-hover:border-violet-500/40 transition-colors pointer-events-none opacity-50">
+              Resume Analyzer coming in Phase 7
+            </button>
+          </div>
+
+          {/* Card 4: Interview Preparation Placeholder */}
+          <div className="card bg-slate-900 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500 rounded-full blur-[70px] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-rose-955 text-rose-400 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-white text-lg">AI Mock Interview</h4>
+                </div>
+                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+                  Phase 8
+                </span>
+              </div>
+              <p className="text-slate-450 text-xs mb-6">
+                Prepare for technical and behavioral placement rounds. Undergo conversational interviews powered by the Gemini API with structured transcripts.
+              </p>
+
+              {/* Visual details */}
+              <div className="space-y-2 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4">
+                <div className="flex justify-between text-xs border-b border-slate-900/60 pb-1.5">
+                  <span className="text-slate-400">Supported Formats:</span>
+                  <span className="font-semibold text-white">Chat & Audio</span>
+                </div>
+                <div className="flex justify-between text-xs border-b border-slate-900/60 pb-1.5">
+                  <span className="text-slate-400">Standard Rounds:</span>
+                  <span className="font-semibold text-white">HR, Tech, System Design</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400">Post-interview details:</span>
+                  <span className="font-semibold text-rose-450">Gemini Feedback Score</span>
+                </div>
+              </div>
+            </div>
+            <button className="btn-secondary w-full justify-center text-xs mt-4 group-hover:border-rose-500/40 transition-colors pointer-events-none opacity-50">
+              Mock Interviews coming in Phase 8
+            </button>
+          </div>
+
         </section>
       </main>
     </div>

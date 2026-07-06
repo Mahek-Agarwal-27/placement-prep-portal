@@ -35,6 +35,15 @@ const authService = {
     const response = await api.get('/auth/me');
     return response.data; // { success, message, data: user }
   },
+
+  /**
+   * Updates profile of the currently logged-in user
+   * @param {Object} profileData - fields to update
+   */
+  updateProfile: async (profileData) => {
+    const response = await api.put('/auth/profile', profileData);
+    return response.data; // { success, message, data: user }
+  },
 };
 
 export default authService;

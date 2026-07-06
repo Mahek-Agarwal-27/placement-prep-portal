@@ -107,3 +107,52 @@ exports.getMe = asyncHandler(async (req, res, next) => {
 
   res.status(200).json(successResponse(user, 'User profile fetched successfully'));
 });
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private (Protected by JWT)
+exports.updateProfile = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json(errorResponse('User not found'));
+  }
+
+  const { name, college, branch, graduationYear, skills, bio, linkedIn, github } = req.body;
+
+  if (name !== undefined) user.name = name;
+
+  if (user.profile) {
+    if (college !== undefined) user.profile.college = college;
+    if (branch !== undefined) user.profile.branch = branch;
+    if (graduationYear !== undefined) user.profile.graduationYear = graduationYear;
+    if (bio !== undefined) user.profile.bio = bio;
+    if (linkedIn !== undefined) user.profile.linkedIn = linkedIn;
+    if (github !== undefined) user.profile.github = github;
+    
+    if (skills !== undefined) {
+      if (Array.isArray(skills)) {
+        user.profile.skills = skills;
+      } else if (typeof skills === 'string') {
+        user.profile.skills = skills.split(',').map(s => s.trim()).filter(s => s !== '');
+      }
+    }
+  }
+
+  await user.save();
+
+  // Return user without password
+  const userResponse = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    profile: user.profile,
+    streak: user.streak,
+    stats: user.stats,
+    createdAt: user.createdAt,
+  };
+
+  res.status(200).json(successResponse(userResponse, 'Profile updated successfully'));
+});
+
