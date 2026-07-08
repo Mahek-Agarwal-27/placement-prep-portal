@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 
 const SignupPage = () => {
   const [name, setName]             = useState('');
@@ -50,7 +51,7 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-transparent px-4 py-12">
       <div className="card w-full max-w-md bg-slate-900 border-slate-800 p-8 rounded-2xl shadow-2xl relative overflow-hidden animate-fade-in">
         {/* Glow effect */}
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500 rounded-full blur-3xl opacity-10"></div>
@@ -58,6 +59,9 @@ const SignupPage = () => {
 
         <div className="relative">
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <Logo className="h-10 w-10 animate-fade-in" textClassName="text-2xl font-black" />
+            </div>
             <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
               Get Started
             </h1>

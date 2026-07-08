@@ -12,6 +12,7 @@ import questionService from '../services/questionService';
 import taskService from '../services/taskService';
 import noteService from '../services/noteService';
 import resumeService from '../services/resumeService';
+import Logo from '../components/Logo';
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
@@ -75,13 +76,13 @@ const DashboardPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Navbar Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
+      <header className="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-extrabold tracking-wider gradient-text">
-            PlacementPro
-          </span>
+          <Link to="/dashboard">
+            <Logo />
+          </Link>
           <span className="text-xs bg-indigo-950 text-indigo-300 font-semibold px-2 py-0.5 rounded border border-indigo-800">
             Beta
           </span>
@@ -166,55 +167,46 @@ const DashboardPage = () => {
           </div>
         </section>
 
-        {/* Temporary Quick Stats */}
+        {/* Quick Stats */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="card">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">
-                DSA Solved
-              </h3>
-              <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-900">
-                Active
-              </span>
+          <div className="gradient-card-emerald p-6 animate-fade-in" style={{animationDelay: '0.05s'}}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="icon-box bg-emerald-500/15 text-emerald-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+              </div>
+              <span className="pill bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">DSA</span>
             </div>
-            <p className="text-4xl font-extrabold text-white">
-              {user?.stats?.totalDSASolved || 0} <span className="text-lg text-slate-500 font-normal">problems</span>
-            </p>
+            <p className="stat-number text-white">{user?.stats?.totalDSASolved || dsaBreakdown.total || 0}</p>
+            <p className="text-slate-400 text-xs mt-1 font-medium">Problems Solved</p>
           </div>
-          <div className="card">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">
-                Tasks Completed
-              </h3>
-              <span className="text-[10px] text-indigo-400 font-semibold bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-900">
-                Scheduled
-              </span>
+          <div className="gradient-card-indigo p-6 animate-fade-in" style={{animationDelay: '0.1s'}}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="icon-box bg-indigo-500/15 text-indigo-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+              </div>
+              <span className="pill bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Tasks</span>
             </div>
-            <p className="text-4xl font-extrabold text-white">
-              {user?.stats?.totalTasksDone || 0} <span className="text-lg text-slate-500 font-normal">done</span>
-            </p>
+            <p className="stat-number text-white">{user?.stats?.totalTasksDone || 0}</p>
+            <p className="text-slate-400 text-xs mt-1 font-medium">Tasks Completed</p>
           </div>
-          <div className="card">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">
-                Study Time
-              </h3>
-              <span className="text-[10px] text-violet-400 font-semibold bg-violet-950/80 px-2 py-0.5 rounded border border-violet-900">
-                Log Time
-              </span>
+          <div className="gradient-card-amber p-6 animate-fade-in" style={{animationDelay: '0.15s'}}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="icon-box bg-amber-500/15 text-amber-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <span className="pill bg-amber-500/10 text-amber-400 border border-amber-500/20">Study</span>
             </div>
-            <p className="text-4xl font-extrabold text-white">
-              {user?.stats?.totalStudyHours || 0} <span className="text-lg text-slate-500 font-normal">hours</span>
-            </p>
+            <p className="stat-number text-white">{user?.stats?.totalStudyHours || 0}</p>
+            <p className="text-slate-400 text-xs mt-1 font-medium">Study Hours Logged</p>
           </div>
         </section>
 
-        {/* Feature Dashboard Placeholders Grid */}
+        {/* Feature Dashboard Grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
           
-          {/* Card 1: DSA Progress Placeholder */}
-          <div className="card bg-slate-900 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500 rounded-full blur-[70px] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+          {/* Card 1: DSA Progress */}
+          <div className="card bg-slate-900/70 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden animate-fade-in" style={{animationDelay: '0.1s'}}>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500 rounded-full blur-[80px] opacity-8 pointer-events-none group-hover:opacity-15 transition-opacity duration-500"></div>
             <div>
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">

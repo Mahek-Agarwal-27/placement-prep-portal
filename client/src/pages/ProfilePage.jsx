@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 
 const ProfilePage = () => {
   const { user, updateProfile, logout } = useAuth();
@@ -105,12 +106,12 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Header / Navbar */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
+      <header className="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Link to="/dashboard" className="text-xl font-extrabold tracking-wider gradient-text hover:opacity-90 transition-opacity">
-            PlacementPro
+          <Link to="/dashboard">
+            <Logo />
           </Link>
           <span className="text-xs bg-indigo-950 text-indigo-300 font-semibold px-2 py-0.5 rounded border border-indigo-800">
             Beta

@@ -1,4 +1,4 @@
-# AI-Powered Placement Preparation Portal 🚀
+# HireNova AI — Your AI-Powered Placement Companion 🚀
 
 > An all-in-one platform for students preparing for campus placements — featuring DSA Tracker, Study Planner, Resume Analyzer, AI-Powered Roadmaps, and Interview Preparation.
 

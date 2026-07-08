@@ -1,7 +1,7 @@
 {
   "name": "placement-prep-portal-server",
   "version": "1.0.0",
-  "description": "Express backend for AI-Powered Placement Preparation Portal",
+  "description": "Express backend for HireNova AI — Your AI-Powered Placement Companion",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,36 +1,47 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Tell Tailwind to scan all React source files for class names
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
   ],
+  darkMode: 'class', // Support class-based dark mode
   theme: {
     extend: {
-      // Custom color palette for the portal
       colors: {
+        // Branding Palette
         primary: {
-          50:  '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
+          DEFAULT: '#4F46E5',
+          light: '#6366F1',
+          dark: '#3730A3',
+        },
+        secondary: {
+          DEFAULT: '#7C3AED',
+          light: '#8B5CF6',
+          dark: '#5B21B6',
         },
         accent: {
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
+          DEFAULT: '#06B6D4',
+          light: '#22D3EE',
+          dark: '#0891B2',
         },
+        success: '#22C55E',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        
+        // Background and Card Layout Specs
+        lightBg: '#F8FAFC',
+        darkBg: '#0F172A',
+        cardLight: '#FFFFFF',
+        cardDark: '#1E293B',
       },
-      // Custom font family
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        poppins: ['Poppins', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
       },
+      boxShadow: {
+        premium: '0 4px 20px -2px rgba(79, 70, 229, 0.1)',
+        glow: '0 0 24px rgba(79, 70, 229, 0.25)',
+      }
     },
   },
   plugins: [],

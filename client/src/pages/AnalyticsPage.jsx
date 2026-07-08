@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 import {
   ResponsiveContainer,
   PieChart,
@@ -104,11 +105,13 @@ const AnalyticsPage = () => {
   const highestInterviewScore = interviewData.length > 0 ? Math.max(...interviewData.map(i => i.score)) : 0;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-y-auto">
+    <div className="min-h-screen flex flex-col overflow-y-auto">
       {/* Navbar */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md px-6 py-4 flex justify-between items-center shrink-0 z-10">
+      <header className="glass-panel px-6 py-4 flex justify-between items-center shrink-0 z-10">
         <div className="flex items-center gap-2">
-          <Link to="/dashboard" className="text-xl font-extrabold tracking-wider gradient-text">PlacementPro</Link>
+          <Link to="/dashboard">
+            <Logo />
+          </Link>
           <span className="text-xs bg-indigo-950 text-indigo-300 font-semibold px-2 py-0.5 rounded border border-indigo-800">Beta</span>
         </div>
         <nav className="hidden sm:flex items-center gap-5 text-sm font-semibold">

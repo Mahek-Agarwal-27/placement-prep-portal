@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 
 const LoginPage = () => {
   const [email, setEmail]       = useState('');
@@ -40,7 +41,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-transparent px-4">
       <div className="card w-full max-w-md bg-slate-900 border-slate-800 p-8 rounded-2xl shadow-2xl relative overflow-hidden animate-fade-in">
         {/* Glow effect */}
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500 rounded-full blur-3xl opacity-10"></div>
@@ -48,11 +49,14 @@ const LoginPage = () => {
 
         <div className="relative">
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <Logo className="h-10 w-10 animate-fade-in" textClassName="text-2xl font-black" />
+            </div>
             <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
               Welcome Back
             </h1>
             <p className="text-slate-400 text-sm">
-              Sign in to your PlacementPro account
+              Sign in to your HireNova AI account
             </p>
           </div>
 

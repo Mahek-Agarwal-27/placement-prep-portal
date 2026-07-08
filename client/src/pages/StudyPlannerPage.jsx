@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 import taskService from '../services/taskService';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -307,11 +308,13 @@ const StudyPlannerPage = () => {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Navbar */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
+      <header className="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Link to="/dashboard" className="text-xl font-extrabold tracking-wider gradient-text">PlacementPro</Link>
+          <Link to="/dashboard">
+            <Logo />
+          </Link>
           <span className="text-xs bg-indigo-950 text-indigo-300 font-semibold px-2 py-0.5 rounded border border-indigo-800">Beta</span>
         </div>
         <nav className="hidden sm:flex items-center gap-5 text-sm font-semibold">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 import noteService from '../services/noteService';
 import aiService from '../services/aiService';
 
@@ -160,11 +161,13 @@ const NotesPage = () => {
   const folders = [...new Set(notes.map(n => n.folder))];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen flex flex-col h-screen overflow-hidden">
       {/* Navbar */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md px-6 py-4 flex justify-between items-center shrink-0 z-10">
+      <header className="glass-panel px-6 py-4 flex justify-between items-center shrink-0 z-10">
         <div className="flex items-center gap-2">
-          <Link to="/dashboard" className="text-xl font-extrabold tracking-wider gradient-text">PlacementPro</Link>
+          <Link to="/dashboard">
+            <Logo />
+          </Link>
           <span className="text-xs bg-indigo-950 text-indigo-300 font-semibold px-2 py-0.5 rounded border border-indigo-800">Beta</span>
         </div>
         <nav className="hidden sm:flex items-center gap-5 text-sm font-semibold">
@@ -268,7 +271,7 @@ const NotesPage = () => {
         </aside>
 
         {/* Editor Area */}
-        <section className="flex-1 flex flex-col bg-slate-950 p-6 overflow-hidden relative">
+        <section className="flex-1 flex flex-col bg-transparent p-6 overflow-hidden relative">
           {/* Decorative glow */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[120px] opacity-5 pointer-events-none"></div>
           

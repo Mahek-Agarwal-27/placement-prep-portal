@@ -1,0 +1,43 @@
+import React from 'react';
+
+const Logo = ({ className = "h-8 w-8", showText = true, textClassName = "text-xl font-extrabold font-poppins" }) => {
+  return (
+    <div className="flex items-center gap-2.5 select-none">
+      {/* SVG Logo Icon */}
+      <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#4F46E5" />
+            <stop offset="100%" stopColor="#7C3AED" />
+          </linearGradient>
+          <linearGradient id="spark-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#06B6D4" />
+            <stop offset="100%" stopColor="#22D3EE" />
+          </linearGradient>
+        </defs>
+        
+        {/* Left Column of H */}
+        <rect x="20" y="20" width="14" height="60" rx="7" fill="url(#logo-grad)" />
+        
+        {/* Horizontal Bar of H */}
+        <rect x="34" y="43" width="30" height="14" rx="4" fill="url(#logo-grad)" />
+        
+        {/* Right Column of H (Upward Growth Arrow) */}
+        <path d="M62 80V35C62 32.2386 64.2386 30 67 30H71C73.7614 30 76 32.2386 76 35V80C76 82.7614 73.7614 85 71 85H67C64.2386 85 62 82.7614 62 80Z" fill="url(#logo-grad)" />
+        <path d="M52 38L69 19L86 38H52Z" fill="url(#logo-grad)" />
+        
+        {/* AI Spark (4-pointed star) */}
+        <path d="M84 14C84 18 86 20 90 20C86 20 84 22 84 26C84 22 82 20 78 20C82 20 84 18 84 14Z" fill="url(#spark-grad)" />
+      </svg>
+
+      {/* Brand Text */}
+      {showText && (
+        <span className={`${textClassName} tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400`}>
+          HireNova<span className="text-white font-medium dark:text-white text-slate-900 transition-colors">AI</span>
+        </span>
+      )}
+    </div>
+  );
+};
+
+export default Logo;
