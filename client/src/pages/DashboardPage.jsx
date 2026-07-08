@@ -87,6 +87,9 @@ const DashboardPage = () => {
           <Link to="/resume-analyzer" className="text-slate-400 hover:text-white transition-colors">
             Resume Analyzer
           </Link>
+          <Link to="/mock-interview" className="text-slate-400 hover:text-white transition-colors">
+            Mock Interview
+          </Link>
           <Link to="/profile" className="text-slate-400 hover:text-white transition-colors">
             Profile
           </Link>
@@ -435,9 +438,12 @@ const DashboardPage = () => {
                 </div>
               </div>
             </div>
-            <button className="btn-secondary w-full justify-center text-xs mt-4 group-hover:border-rose-500/40 transition-colors pointer-events-none opacity-50">
-              Mock Interviews coming in Phase 8
-            </button>
+            <Link to="/mock-interview" className="btn-primary w-full justify-center text-xs mt-4 flex items-center gap-2 bg-rose-600 hover:bg-rose-500 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Open Mock Interview
+            </Link>
           </div>
 
         </section>

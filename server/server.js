@@ -52,6 +52,7 @@ app.use('/api/tasks',     require('./routes/taskRoutes'));      // Phase 5: Stud
 app.use('/api/notes',     require('./routes/noteRoutes'));      // Phase 6: AI Notes
 app.use('/api/ai',        require('./routes/aiRoutes'));        // Phase 6: AI Notes
 app.use('/api/resumes',   require('./routes/resumeRoutes'));    // Phase 7: Resume Analyzer
+app.use('/api/interviews', require('./routes/interviewRoutes')); // Phase 8: AI Mock Interview
 // app.use('/api/users',     require('./routes/userRoutes'));
 // app.use('/api/interview', require('./routes/interviewRoutes'));
 

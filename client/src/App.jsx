@@ -12,6 +12,7 @@ import DSATrackerPage from './pages/DSATrackerPage';
 import StudyPlannerPage from './pages/StudyPlannerPage';
 import NotesPage from './pages/NotesPage';
 import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage';
+import InterviewPage from './pages/InterviewPage';
 
 // ----- Root App Component -----
 function App() {
@@ -73,6 +74,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ResumeAnalyzerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mock-interview"
+            element={
+              <ProtectedRoute>
+                <InterviewPage />
               </ProtectedRoute>
             }
           />
