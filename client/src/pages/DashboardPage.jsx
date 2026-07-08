@@ -13,6 +13,7 @@ import taskService from '../services/taskService';
 import noteService from '../services/noteService';
 import resumeService from '../services/resumeService';
 import Logo from '../components/Logo';
+import ThemeToggle from '../components/ThemeToggle';
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
@@ -113,10 +114,11 @@ const DashboardPage = () => {
             Profile
           </Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-slate-300 text-sm hidden md:inline">
             Hello, <strong className="text-white">{user?.name}</strong>
           </span>
+          <ThemeToggle />
           <button onClick={logout} className="btn-secondary px-4 py-2 text-xs">
             Sign Out
           </button>
@@ -196,7 +198,7 @@ const DashboardPage = () => {
               </div>
               <span className="pill bg-amber-500/10 text-amber-400 border border-amber-500/20">Study</span>
             </div>
-            <p className="stat-number text-white">{user?.stats?.totalStudyHours || 0}</p>
+            <p className="stat-number text-white">{totalStudyHours}</p>
             <p className="text-slate-400 text-xs mt-1 font-medium">Study Hours Logged</p>
           </div>
         </section>

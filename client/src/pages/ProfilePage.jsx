@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import ThemeToggle from '../components/ThemeToggle';
 
 const ProfilePage = () => {
   const { user, updateProfile, logout } = useAuth();
@@ -125,7 +126,8 @@ const ProfilePage = () => {
             Profile
           </Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
           <button onClick={logout} className="btn-secondary px-4 py-2 text-xs">
             Sign Out
           </button>

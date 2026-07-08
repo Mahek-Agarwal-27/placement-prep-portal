@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import ThemeToggle from '../components/ThemeToggle';
 import {
   ResponsiveContainer,
   PieChart,
@@ -123,8 +124,9 @@ const AnalyticsPage = () => {
           <Link to="/mock-interview" className="text-slate-400 hover:text-white transition-colors">Mock Interview</Link>
           <Link to="/analytics" className="text-indigo-400 border-b-2 border-indigo-500 pb-1">Analytics</Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-slate-300 text-sm hidden md:inline">Hi, <strong className="text-white">{user?.name}</strong></span>
+          <ThemeToggle />
           <button onClick={logout} className="btn-secondary px-4 py-2 text-xs">Sign Out</button>
         </div>
       </header>
