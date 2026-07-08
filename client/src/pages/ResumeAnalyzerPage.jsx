@@ -218,12 +218,16 @@ const ResumeAnalyzerPage = () => {
 
               {/* Upload Box */}
               <div 
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center transition-all cursor-pointer ${
-                  file ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-700 hover:border-violet-500 hover:bg-violet-500/5'
+                onDragOver={(e) => !isAnalyzing && handleDragOver(e)}
+                onDrop={(e) => !isAnalyzing && handleDrop(e)}
+                className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center transition-all ${
+                  isAnalyzing 
+                    ? 'border-slate-800 bg-slate-900/10 opacity-50 cursor-not-allowed' 
+                    : file 
+                      ? 'border-emerald-500 bg-emerald-500/5 cursor-pointer' 
+                      : 'border-slate-700 hover:border-violet-500 hover:bg-violet-500/5 cursor-pointer'
                 }`}
-                onClick={() => fileInputRef.current.click()}
+                onClick={() => !isAnalyzing && fileInputRef.current.click()}
               >
                 <input 
                   type="file" 
@@ -231,6 +235,7 @@ const ResumeAnalyzerPage = () => {
                   onChange={handleFileChange} 
                   accept="application/pdf" 
                   className="hidden" 
+                  disabled={isAnalyzing}
                 />
                 
                 {file ? (
@@ -239,7 +244,7 @@ const ResumeAnalyzerPage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p className="font-bold text-emerald-300">{file.name}</p>
-                    <p className="text-xs text-slate-500">Click to change file</p>
+                    <p className="text-xs text-slate-500">{isAnalyzing ? 'Uploading file...' : 'Click to change file'}</p>
                   </div>
                 ) : (
                   <div className="text-center space-y-3">
@@ -262,6 +267,7 @@ const ResumeAnalyzerPage = () => {
                   onChange={(e) => setJobDescription(e.target.value)}
                   className="input-field min-h-[120px] resize-y"
                   placeholder="Paste the job description here. The AI will analyze how well your resume matches the required skills and keywords."
+                  disabled={isAnalyzing}
                 ></textarea>
               </div>
 

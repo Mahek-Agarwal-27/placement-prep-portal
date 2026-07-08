@@ -119,16 +119,21 @@ const NotesPage = () => {
   };
 
   const handleAIAction = async () => {
-    setIsGenerating(true);
-    setAiResult('');
-    
     // Get selected text if any, otherwise use full content
     let selectedText = '';
     if (window.getSelection) {
       selectedText = window.getSelection().toString();
     }
     
-    const contextText = selectedText || content;
+    const contextText = (selectedText || content || '').trim();
+    
+    if (!contextText) {
+      setAiResult('Please enter some notes before using AI.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setAiResult('');
     
     try {
       const res = await aiService.generateAIResponse({
@@ -140,7 +145,7 @@ const NotesPage = () => {
         setAiResult(res.data.text);
       }
     } catch (e) {
-      setAiResult('Error generating AI response. Please ensure your GEMINI_API_KEY is configured correctly.');
+      setAiResult(e.response?.data?.message || 'Error generating AI response. Please ensure your GEMINI_API_KEY is configured correctly.');
     } finally {
       setIsGenerating(false);
     }
@@ -369,12 +374,19 @@ const NotesPage = () => {
                )}
                
                <button 
-                 onClick={handleAIAction}
-                 disabled={isGenerating || (aiAction === 'custom' && !aiPrompt.trim())}
-                 className="btn-primary w-full justify-center py-2.5"
-               >
-                 {isGenerating ? 'Generating...' : 'Generate AI Response'}
-               </button>
+                  onClick={handleAIAction}
+                  disabled={isGenerating || (aiAction === 'custom' && !aiPrompt.trim())}
+                  className="btn-primary w-full justify-center py-2.5 flex items-center gap-2"
+                >
+                  {isGenerating ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate AI Response'
+                  )}
+                </button>
                
                {aiResult && (
                  <div className="mt-4 pt-4 border-t border-slate-800">

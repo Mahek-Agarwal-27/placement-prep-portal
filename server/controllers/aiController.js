@@ -4,7 +4,7 @@ const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy-key');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
 // @desc    Process prompt with Gemini AI
 // @route   POST /api/ai/generate
@@ -39,11 +39,50 @@ exports.generateAIResponse = asyncHandler(async (req, res) => {
   }
 
   try {
-    const result = await model.generateContent(finalPrompt);
-    const responseText = result.response.text();
+    // Generate AI content with a 15-second timeout and 1x retry on failure
+    const generateWithTimeoutAndRetry = async (promptText) => {
+      let attempt = 1;
+      const maxAttempts = 2;
+      const timeoutMs = 15000;
+      
+      while (attempt <= maxAttempts) {
+        try {
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Gemini API timeout: Took longer than 15s to respond.')), timeoutMs)
+          );
+          
+          console.log(`🤖 Note AI Attempt ${attempt}/${maxAttempts} running...`);
+          const result = await Promise.race([
+            model.generateContent(promptText),
+            timeoutPromise
+          ]);
+          
+          return result.response.text();
+        } catch (err) {
+          console.warn(`⚠️ Note AI Attempt ${attempt} failed:`, err.message);
+          if (attempt === maxAttempts) {
+            throw err;
+          }
+          attempt++;
+          // Wait 1 second before retrying
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+    };
+
+    const responseText = await generateWithTimeoutAndRetry(finalPrompt);
     res.status(200).json(successResponse({ text: responseText }, 'AI generated content successfully.'));
   } catch (error) {
-    console.error('Gemini API Error:', error);
-    res.status(500).json(errorResponse('Failed to generate AI response.'));
+    console.error('Final Gemini API Error:', error);
+    const errMsg = error.message || '';
+    let clientMessage = 'Failed to generate AI response.';
+    if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota')) {
+      clientMessage = 'Gemini API quota exceeded. Daily limits apply on the free tier. Please try again in 1 minute, or provide a different API key.';
+    } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('api key')) {
+      clientMessage = 'Invalid Gemini API Key. Please verify the key value in server/.env configuration.';
+    } else {
+      clientMessage = errMsg || 'An error occurred while communicating with the Gemini AI service.';
+    }
+    res.status(500).json(errorResponse(clientMessage));
   }
 });

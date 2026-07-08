@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import questionService from '../services/questionService';
 import taskService from '../services/taskService';
 import noteService from '../services/noteService';
+import resumeService from '../services/resumeService';
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
@@ -19,14 +20,16 @@ const DashboardPage = () => {
   const [agenda, setAgenda] = useState([]);
   const [recentNotes, setRecentNotes] = useState([]);
   const [totalStudyHours, setTotalStudyHours] = useState(0);
+  const [latestResumeScore, setLatestResumeScore] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [qStatsRes, tasksRes, notesRes] = await Promise.all([
+        const [qStatsRes, tasksRes, notesRes, resumeRes] = await Promise.all([
           questionService.getStats(),
           taskService.getTasks({ status: '' }), // fetch all, we will slice
-          noteService.getNotes()
+          noteService.getNotes(),
+          resumeService.getResumes()
         ]);
         
         if (qStatsRes.success && qStatsRes.data?.byDifficulty) {
@@ -57,6 +60,12 @@ const DashboardPage = () => {
 
         if (notesRes.success && notesRes.data) {
           setRecentNotes(notesRes.data.slice(0, 3));
+        }
+
+        if (resumeRes.success && resumeRes.data && resumeRes.data.length > 0) {
+          setLatestResumeScore(resumeRes.data[0].score);
+        } else {
+          setLatestResumeScore(null);
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -214,9 +223,6 @@ const DashboardPage = () => {
                   </div>
                   <h4 className="font-bold text-white text-lg">DSA Progress Tracker</h4>
                 </div>
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
-                  Phase 4
-                </span>
               </div>
               <p className="text-slate-450 text-xs mb-6">
                 Keep track of your solved DSA problems from LeetCode, Codeforces, or GeeksforGeeks. Get category analysis and difficulty logs.
@@ -279,9 +285,6 @@ const DashboardPage = () => {
                   </div>
                   <h4 className="font-bold text-white text-lg">Daily Study Planner</h4>
                 </div>
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
-                  Phase 5
-                </span>
               </div>
               <p className="text-slate-450 text-xs mb-4">
                 Organize your study calendar. Set custom preparation tasks, log daily timings, and stay on track with automated reminders.
@@ -327,9 +330,6 @@ const DashboardPage = () => {
                   </div>
                   <h4 className="font-bold text-white text-lg">AI-Integrated Notes</h4>
                 </div>
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
-                  Phase 6
-                </span>
               </div>
               <p className="text-slate-450 text-xs mb-4">
                 Capture study logs, coding patterns, and concept definitions. Let Gemini AI summarize, explain, or improve your drafts.
@@ -368,16 +368,13 @@ const DashboardPage = () => {
             <div>
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-violet-950 text-violet-400 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-violet-955 text-violet-400 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   <h4 className="font-bold text-white text-lg">AI Resume Analyzer</h4>
                 </div>
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
-                  Phase 7
-                </span>
               </div>
               <p className="text-slate-450 text-xs mb-6">
                 Upload your resume, parse details, and compare it with current job descriptions. Receive Gemini-powered optimization scores and grammar audits.
@@ -386,7 +383,7 @@ const DashboardPage = () => {
               {/* Visual mock score circle */}
               <div className="flex items-center gap-6 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4">
                 <div className="relative w-16 h-16 flex items-center justify-center bg-violet-955 rounded-full border-4 border-violet-900 border-t-violet-500 shadow-md">
-                  <span className="text-white font-extrabold text-sm">82%</span>
+                  <span className="text-white font-extrabold text-sm">{latestResumeScore !== null ? `${latestResumeScore}%` : 'N/A'}</span>
                 </div>
                 <div className="space-y-1 text-xs text-slate-400">
                   <p className="text-white font-bold text-sm">Review Metrics</p>
@@ -423,9 +420,6 @@ const DashboardPage = () => {
                   </div>
                   <h4 className="font-bold text-white text-lg">AI Mock Interview</h4>
                 </div>
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
-                  Phase 8
-                </span>
               </div>
               <p className="text-slate-450 text-xs mb-6">
                 Prepare for technical and behavioral placement rounds. Undergo conversational interviews powered by the Gemini API with structured transcripts.
@@ -468,9 +462,6 @@ const DashboardPage = () => {
                   </div>
                   <h4 className="font-bold text-white text-lg">Performance Analytics</h4>
                 </div>
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
-                  Phase 9
-                </span>
               </div>
               <p className="text-slate-450 text-xs mb-6">
                 Gain deep insights into your placement readiness. Review problem difficulty ratios, study hourly categories, and overall score trends.
