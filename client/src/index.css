@@ -196,6 +196,40 @@ body {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(135deg, var(--brand-primary-light), var(--brand-accent));
   }
+
+  /* Pill tags — must be inside @layer to use @apply */
+  .pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .pill:hover {
+    transform: scale(1.04);
+  }
+
+  /* Premium icon wrapper */
+  .icon-box {
+    @apply w-9 h-9 rounded-xl flex items-center justify-center;
+    transition: transform 0.2s ease;
+  }
+  .icon-box:hover {
+    transform: scale(1.1) rotate(3deg);
+  }
+
+  /* Animated counter number */
+  .stat-number {
+    @apply text-2xl font-black font-poppins;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Status indicator dots */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+    animation: pulseGlow 2s ease infinite;
+  }
+  .status-dot-green  { @apply bg-emerald-500; }
+  .status-dot-amber  { @apply bg-amber-500; }
+  .status-dot-red    { @apply bg-rose-500; }
+  .status-dot-indigo { @apply bg-indigo-500; }
 }
 
 /* ---------- Custom Keyframe Animations ---------- */
@@ -322,40 +356,6 @@ body {
   animation: gradientShift 3s ease infinite;
   z-index: -1;
 }
-
-/* Pill tags */
-.pill {
-  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.pill:hover {
-  transform: scale(1.04);
-}
-
-/* Premium icon wrapper */
-.icon-box {
-  @apply w-9 h-9 rounded-xl flex items-center justify-center;
-  transition: transform 0.2s ease;
-}
-.icon-box:hover {
-  transform: scale(1.1) rotate(3deg);
-}
-
-/* Animated counter */
-.stat-number {
-  @apply text-2xl font-black font-poppins;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Status indicator dot */
-.status-dot {
-  @apply w-2 h-2 rounded-full;
-  animation: pulseGlow 2s ease infinite;
-}
-.status-dot-green { @apply bg-emerald-500; }
-.status-dot-amber { @apply bg-amber-500; }
-.status-dot-red   { @apply bg-rose-500; }
-.status-dot-indigo { @apply bg-indigo-500; }
 
 /* Link hover underline effect */
 .link-hover {
