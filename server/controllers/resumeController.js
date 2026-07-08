@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const multer = require('multer');
 const Resume = require('../models/Resume');
@@ -9,7 +9,7 @@ const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy-key');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 // Configure Multer for PDF uploads
 const storage = multer.diskStorage({
@@ -60,7 +60,8 @@ exports.analyzeResume = asyncHandler(async (req, res) => {
   try {
     // 1. Extract text from PDF
     const dataBuffer = fs.readFileSync(filePath);
-    const pdfData = await pdfParse(dataBuffer);
+    const parser = new PDFParse({ data: dataBuffer });
+    const pdfData = await parser.getText();
     const resumeText = pdfData.text;
 
     // 2. Build Prompt for Gemini
