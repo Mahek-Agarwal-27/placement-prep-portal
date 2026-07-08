@@ -13,6 +13,7 @@ import StudyPlannerPage from './pages/StudyPlannerPage';
 import NotesPage from './pages/NotesPage';
 import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage';
 import InterviewPage from './pages/InterviewPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 
 // ----- Root App Component -----
 function App() {
@@ -82,6 +83,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <InterviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <AnalyticsPage />
               </ProtectedRoute>
             }
           />

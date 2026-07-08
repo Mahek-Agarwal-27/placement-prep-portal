@@ -18,6 +18,7 @@ const DashboardPage = () => {
   const [dsaBreakdown, setDsaBreakdown] = useState({ easy: 0, medium: 0, hard: 0, total: 0 });
   const [agenda, setAgenda] = useState([]);
   const [recentNotes, setRecentNotes] = useState([]);
+  const [totalStudyHours, setTotalStudyHours] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,6 +48,11 @@ const DashboardPage = () => {
             return new Date(a.createdAt) - new Date(b.createdAt);
           });
           setAgenda(tasks.slice(0, 3));
+          
+          const completedHours = tasksRes.data
+            .filter(t => t.status === 'completed')
+            .reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
+          setTotalStudyHours(completedHours);
         }
 
         if (notesRes.success && notesRes.data) {
@@ -89,6 +95,9 @@ const DashboardPage = () => {
           </Link>
           <Link to="/mock-interview" className="text-slate-400 hover:text-white transition-colors">
             Mock Interview
+          </Link>
+          <Link to="/analytics" className="text-slate-400 hover:text-white transition-colors">
+            Analytics
           </Link>
           <Link to="/profile" className="text-slate-400 hover:text-white transition-colors">
             Profile
@@ -443,6 +452,47 @@ const DashboardPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
               Open Mock Interview
+            </Link>
+          </div>
+
+          {/* Card 6: Performance Analytics */}
+          <div className="card bg-slate-900 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500 rounded-full blur-[70px] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-white text-lg">Performance Analytics</h4>
+                </div>
+                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+                  Phase 9
+                </span>
+              </div>
+              <p className="text-slate-450 text-xs mb-6">
+                Gain deep insights into your placement readiness. Review problem difficulty ratios, study hourly categories, and overall score trends.
+              </p>
+
+              {/* Visual mini statistics layout */}
+              <div className="grid grid-cols-2 gap-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-3.5 text-xs">
+                <div className="text-center p-2 bg-slate-900/60 rounded border border-slate-850">
+                  <p className="text-slate-500 text-[10px]">Resume Feedback</p>
+                  <p className="text-cyan-400 font-extrabold text-sm mt-0.5">Active</p>
+                </div>
+                <div className="text-center p-2 bg-slate-900/60 rounded border border-slate-850">
+                  <p className="text-slate-500 text-[10px]">Completed Study</p>
+                  <p className="text-emerald-400 font-extrabold text-sm mt-0.5">{totalStudyHours} hrs</p>
+                </div>
+              </div>
+            </div>
+            <Link to="/analytics" className="btn-primary w-full justify-center text-xs mt-4 flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+              </svg>
+              Open Analytics
             </Link>
           </div>
 
