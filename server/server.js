@@ -50,8 +50,8 @@ app.use('/api/questions', require('./routes/questionRoutes')); // Phase 4: DSA T
 app.use('/api/tasks',     require('./routes/taskRoutes'));      // Phase 5: Study Planner
 app.use('/api/notes',     require('./routes/noteRoutes'));      // Phase 6: AI Notes
 app.use('/api/ai',        require('./routes/aiRoutes'));        // Phase 6: AI Notes
+app.use('/api/resumes',   require('./routes/resumeRoutes'));    // Phase 7: Resume Analyzer
 // app.use('/api/users',     require('./routes/userRoutes'));
-// app.use('/api/resumes',   require('./routes/resumeRoutes'));
 // app.use('/api/interview', require('./routes/interviewRoutes'));
 
 // ── Health-Check Route ────────────────────────────────────────────────────────

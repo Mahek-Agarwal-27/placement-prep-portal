@@ -10,19 +10,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import questionService from '../services/questionService';
 import taskService from '../services/taskService';
+import noteService from '../services/noteService';
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
 
   const [dsaBreakdown, setDsaBreakdown] = useState({ easy: 0, medium: 0, hard: 0, total: 0 });
   const [agenda, setAgenda] = useState([]);
+  const [recentNotes, setRecentNotes] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [qStatsRes, tasksRes] = await Promise.all([
+        const [qStatsRes, tasksRes, notesRes] = await Promise.all([
           questionService.getStats(),
-          taskService.getTasks({ status: '' }) // fetch all, we will slice
+          taskService.getTasks({ status: '' }), // fetch all, we will slice
+          noteService.getNotes()
         ]);
         
         if (qStatsRes.success && qStatsRes.data?.byDifficulty) {
@@ -44,6 +47,10 @@ const DashboardPage = () => {
             return new Date(a.createdAt) - new Date(b.createdAt);
           });
           setAgenda(tasks.slice(0, 3));
+        }
+
+        if (notesRes.success && notesRes.data) {
+          setRecentNotes(notesRes.data.slice(0, 3));
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -76,6 +83,9 @@ const DashboardPage = () => {
           </Link>
           <Link to="/notes" className="text-slate-400 hover:text-white transition-colors">
             AI Notes
+          </Link>
+          <Link to="/resume-analyzer" className="text-slate-400 hover:text-white transition-colors">
+            Resume Analyzer
           </Link>
           <Link to="/profile" className="text-slate-400 hover:text-white transition-colors">
             Profile
@@ -292,7 +302,55 @@ const DashboardPage = () => {
             </Link>
           </div>
 
-          {/* Card 3: Resume Score Placeholder */}
+          {/* Card 3: AI Notes */}
+          <div className="card bg-slate-900 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500 rounded-full blur-[70px] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-violet-955 text-violet-400 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-white text-lg">AI-Integrated Notes</h4>
+                </div>
+                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+                  Phase 6
+                </span>
+              </div>
+              <p className="text-slate-450 text-xs mb-4">
+                Capture study logs, coding patterns, and concept definitions. Let Gemini AI summarize, explain, or improve your drafts.
+              </p>
+
+              {/* Visual list of recent notes */}
+              <div className="space-y-2.5 bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 min-h-[120px]">
+                {recentNotes.length === 0 ? (
+                  <p className="text-slate-500 text-xs text-center pt-8">No notes yet. Start writing with AI help!</p>
+                ) : (
+                  recentNotes.map(note => (
+                    <div key={note._id} className="flex items-center justify-between text-xs pb-2 border-b border-slate-900/60 last:border-b-0 last:pb-0">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="text-slate-500 text-[10px]">📝</span>
+                        <span className="font-medium truncate text-slate-300">{note.title}</span>
+                      </div>
+                      <span className="text-[10px] px-1.5 py-0.2 bg-slate-800 text-slate-400 rounded shrink-0 ml-2">
+                        {note.folder}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            <Link to="/notes" className="btn-primary w-full justify-center text-xs mt-4 flex items-center gap-2 bg-violet-600 hover:bg-violet-500 border-violet-500">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              Open AI Notes
+            </Link>
+          </div>
+
+          {/* Card 4: AI Resume Analyzer */}
           <div className="card bg-slate-900 border-slate-800 p-6 flex flex-col justify-between h-96 relative group overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500 rounded-full blur-[70px] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
             <div>
@@ -332,11 +390,11 @@ const DashboardPage = () => {
                 </div>
               </div>
             </div>
-            <Link to="/notes" className="btn-primary w-full justify-center text-xs mt-4 flex items-center gap-2">
+            <Link to="/resume-analyzer" className="btn-primary w-full justify-center text-xs mt-4 flex items-center gap-2 bg-violet-600 hover:bg-violet-500 border-violet-500">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
-              Open AI Notes
+              Open Resume Analyzer
             </Link>
           </div>
 

@@ -11,6 +11,7 @@ import ProfilePage from './pages/ProfilePage';
 import DSATrackerPage from './pages/DSATrackerPage';
 import StudyPlannerPage from './pages/StudyPlannerPage';
 import NotesPage from './pages/NotesPage';
+import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage';
 
 // ----- Root App Component -----
 function App() {
@@ -64,6 +65,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <NotesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resume-analyzer"
+            element={
+              <ProtectedRoute>
+                <ResumeAnalyzerPage />
               </ProtectedRoute>
             }
           />
