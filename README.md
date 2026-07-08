@@ -96,18 +96,18 @@ CLIENT_URL=http://localhost:5173
 
 ## Build Status
 
-| Phase | Feature                | Status    |
-|-------|------------------------|-----------|
-| 1     | Project Setup          | ✅ Done   |
-| 2     | Authentication         | 🔜 Next   |
-| 3     | Profile & Dashboard    | 🔜 Planned |
-| 4     | DSA Tracker            | 🔜 Planned |
-| 5     | Study Planner          | 🔜 Planned |
-| 6     | Notes                  | 🔜 Planned |
-| 7     | Resume Analyzer        | 🔜 Planned |
-| 8     | Gemini AI Integration  | 🔜 Planned |
-| 9     | Analytics              | 🔜 Planned |
-| 10    | Deployment             | 🔜 Planned |
+| Phase | Feature                                  | Status    |
+|-------|------------------------------------------|-----------|
+| 1     | Project Setup                            | ✅ Done   |
+| 2     | Authentication (JWT & Protected Routes)  | ✅ Done   |
+| 3     | Profile & Dashboard                      | ✅ Done   |
+| 4     | DSA Tracker                              | ✅ Done   |
+| 5     | Study Planner                            | ✅ Done   |
+| 6     | AI-Integrated Notes (Gemini)             | ✅ Done   |
+| 7     | AI Resume Analyzer (pdf-parse + Gemini)  | ✅ Done   |
+| 8     | AI Mock Interview Room (Gemini)          | ✅ Done   |
+| 9     | Performance Analytics (Recharts)         | ✅ Done   |
+| 10    | Final Documentation & Local Deployment   | ✅ Done   |
 
 ---
 
