@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const ThemeContext = createContext();
+const ThemeContext = createContext({
+  theme: 'dark',
+  toggleTheme: () => {},
+});
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -30,5 +33,8 @@ export function ThemeProvider({ children }) {
 }
 
 export function useTheme() {
-  return useContext(ThemeContext);
+  const ctx = useContext(ThemeContext);
+  // Fallback in case used outside ThemeProvider
+  if (!ctx) return { theme: 'dark', toggleTheme: () => {} };
+  return ctx;
 }

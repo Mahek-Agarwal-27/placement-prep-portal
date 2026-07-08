@@ -113,7 +113,7 @@ const ResumeAnalyzerPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen text-slate-100 flex flex-col h-screen overflow-hidden">
       {/* Navbar */}
       <header className="glass-panel px-6 py-4 flex justify-between items-center shrink-0 z-10">
         <div className="flex items-center gap-2">

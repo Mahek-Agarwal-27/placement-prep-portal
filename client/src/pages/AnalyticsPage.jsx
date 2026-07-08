@@ -106,7 +106,7 @@ const AnalyticsPage = () => {
   const highestInterviewScore = interviewData.length > 0 ? Math.max(...interviewData.map(i => i.score)) : 0;
 
   return (
-    <div className="min-h-screen flex flex-col overflow-y-auto">
+    <div className="min-h-screen text-slate-100 flex flex-col overflow-y-auto">
       {/* Navbar */}
       <header className="glass-panel px-6 py-4 flex justify-between items-center shrink-0 z-10">
         <div className="flex items-center gap-2">

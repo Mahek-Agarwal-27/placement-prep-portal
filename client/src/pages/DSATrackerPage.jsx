@@ -302,7 +302,7 @@ const DSATrackerPage = () => {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen text-slate-100 flex flex-col">
       {/* Navbar */}
       <header className="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">

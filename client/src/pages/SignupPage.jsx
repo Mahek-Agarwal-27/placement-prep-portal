@@ -51,7 +51,7 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-transparent px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-12">
       <div className="card w-full max-w-md bg-slate-900 border-slate-800 p-8 rounded-2xl shadow-2xl relative overflow-hidden animate-fade-in">
         {/* Glow effect */}
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500 rounded-full blur-3xl opacity-10"></div>
