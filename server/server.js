@@ -23,6 +23,7 @@ const app = express();
 
 // ── Database ──────────────────────────────────────────────────────────────────
 connectDB();
+console.log(`🔑 GEMINI_API_KEY loaded: ${process.env.GEMINI_API_KEY ? 'YES (' + process.env.GEMINI_API_KEY.substring(0, 5) + '...)' : 'NO'}`);
 
 // ── Middlewares ───────────────────────────────────────────────────────────────
 
