@@ -5,20 +5,52 @@
  * visual placeholders for DSA Progress, Study Planner, Resume Score, and Interview Prep.
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import questionService from '../services/questionService';
+import taskService from '../services/taskService';
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
 
-  // Mock data for visual details on placeholder cards
-  const mockDSABreakdown = { easy: 12, medium: 8, hard: 2 };
-  const mockAgenda = [
-    { id: 1, title: 'Revise Graphs (DFS & BFS)', time: '09:00 AM', status: 'completed' },
-    { id: 2, title: 'Solve 2 Medium Array Questions', time: '02:00 PM', status: 'pending' },
-    { id: 3, title: 'Read System Design Basics', time: '06:00 PM', status: 'pending' }
-  ];
+  const [dsaBreakdown, setDsaBreakdown] = useState({ easy: 0, medium: 0, hard: 0, total: 0 });
+  const [agenda, setAgenda] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [qStatsRes, tasksRes] = await Promise.all([
+          questionService.getStats(),
+          taskService.getTasks({ status: '' }) // fetch all, we will slice
+        ]);
+        
+        if (qStatsRes.success && qStatsRes.data?.byDifficulty) {
+          const breakdown = { easy: 0, medium: 0, hard: 0, total: 0 };
+          qStatsRes.data.byDifficulty.forEach(d => {
+            if (d._id === 'Easy') breakdown.easy = d.count;
+            if (d._id === 'Medium') breakdown.medium = d.count;
+            if (d._id === 'Hard') breakdown.hard = d.count;
+            breakdown.total += d.count;
+          });
+          setDsaBreakdown(breakdown);
+        }
+        
+        if (tasksRes.success && tasksRes.data) {
+          // Priority to pending/in-progress, then completed. Take top 3.
+          const tasks = tasksRes.data.sort((a, b) => {
+            if (a.status !== 'completed' && b.status === 'completed') return -1;
+            if (a.status === 'completed' && b.status !== 'completed') return 1;
+            return new Date(a.createdAt) - new Date(b.createdAt);
+          });
+          setAgenda(tasks.slice(0, 3));
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -38,6 +70,12 @@ const DashboardPage = () => {
           </Link>
           <Link to="/dsa-tracker" className="text-slate-400 hover:text-white transition-colors">
             DSA Tracker
+          </Link>
+          <Link to="/study-planner" className="text-slate-400 hover:text-white transition-colors">
+            Study Planner
+          </Link>
+          <Link to="/notes" className="text-slate-400 hover:text-white transition-colors">
+            AI Notes
           </Link>
           <Link to="/profile" className="text-slate-400 hover:text-white transition-colors">
             Profile
@@ -162,17 +200,17 @@ const DashboardPage = () => {
                 Keep track of your solved DSA problems from LeetCode, Codeforces, or GeeksforGeeks. Get category analysis and difficulty logs.
               </p>
 
-              {/* Visual mock graph */}
+              {/* Visual graph using real data */}
               <div className="space-y-3 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4">
                 <div className="flex justify-between text-xs font-semibold">
                   <span className="text-emerald-400 flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                     Easy
                   </span>
-                  <span>{mockDSABreakdown.easy} Solved</span>
+                  <span>{dsaBreakdown.easy} Solved</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: '60%' }}></div>
+                  <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: dsaBreakdown.total ? `${(dsaBreakdown.easy / dsaBreakdown.total) * 100}%` : '0%' }}></div>
                 </div>
 
                 <div className="flex justify-between text-xs font-semibold">
@@ -180,10 +218,10 @@ const DashboardPage = () => {
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
                     Medium
                   </span>
-                  <span>{mockDSABreakdown.medium} Solved</span>
+                  <span>{dsaBreakdown.medium} Solved</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div className="bg-amber-500 h-full rounded-full" style={{ width: '40%' }}></div>
+                  <div className="bg-amber-500 h-full rounded-full transition-all" style={{ width: dsaBreakdown.total ? `${(dsaBreakdown.medium / dsaBreakdown.total) * 100}%` : '0%' }}></div>
                 </div>
 
                 <div className="flex justify-between text-xs font-semibold">
@@ -191,10 +229,10 @@ const DashboardPage = () => {
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
                     Hard
                   </span>
-                  <span>{mockDSABreakdown.hard} Solved</span>
+                  <span>{dsaBreakdown.hard} Solved</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div className="bg-rose-500 h-full rounded-full" style={{ width: '15%' }}></div>
+                  <div className="bg-rose-500 h-full rounded-full transition-all" style={{ width: dsaBreakdown.total ? `${(dsaBreakdown.hard / dsaBreakdown.total) * 100}%` : '0%' }}></div>
                 </div>
               </div>
             </div>
@@ -227,22 +265,31 @@ const DashboardPage = () => {
                 Organize your study calendar. Set custom preparation tasks, log daily timings, and stay on track with automated reminders.
               </p>
 
-              {/* Visual mock list */}
-              <div className="space-y-2.5 bg-slate-950/40 border border-slate-800/80 rounded-xl p-3">
-                {mockAgenda.map(task => (
-                  <div key={task.id} className="flex items-center justify-between text-xs pb-2 border-b border-slate-900/60 last:border-b-0 last:pb-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${task.status === 'completed' ? 'bg-emerald-500' : 'bg-slate-700'}`}></span>
-                      <span className={`font-medium ${task.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-350'}`}>{task.title}</span>
+              {/* Visual real list */}
+              <div className="space-y-2.5 bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 min-h-[120px]">
+                {agenda.length === 0 ? (
+                   <p className="text-slate-500 text-xs text-center pt-8">No tasks scheduled. Create one in the planner!</p>
+                ) : (
+                  agenda.map(task => (
+                    <div key={task._id} className="flex items-center justify-between text-xs pb-2 border-b border-slate-900/60 last:border-b-0 last:pb-0">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className={`w-2 h-2 shrink-0 rounded-full ${task.status === 'completed' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                        <span className={`font-medium truncate ${task.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-350'}`}>{task.title}</span>
+                      </div>
+                      <span className="text-slate-500 text-[10px] shrink-0 ml-2">
+                        {task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'No Date'}
+                      </span>
                     </div>
-                    <span className="text-slate-500 text-[10px]">{task.time}</span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
-            <button className="btn-secondary w-full justify-center text-xs mt-4 group-hover:border-indigo-500/40 transition-colors pointer-events-none opacity-50">
-              Study Planner coming in Phase 5
-            </button>
+            <Link to="/study-planner" className="btn-primary w-full justify-center text-xs mt-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Open Study Planner
+            </Link>
           </div>
 
           {/* Card 3: Resume Score Placeholder */}
@@ -285,9 +332,12 @@ const DashboardPage = () => {
                 </div>
               </div>
             </div>
-            <button className="btn-secondary w-full justify-center text-xs mt-4 group-hover:border-violet-500/40 transition-colors pointer-events-none opacity-50">
-              Resume Analyzer coming in Phase 7
-            </button>
+            <Link to="/notes" className="btn-primary w-full justify-center text-xs mt-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              Open AI Notes
+            </Link>
           </div>
 
           {/* Card 4: Interview Preparation Placeholder */}

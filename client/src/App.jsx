@@ -9,6 +9,8 @@ import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import DSATrackerPage from './pages/DSATrackerPage';
+import StudyPlannerPage from './pages/StudyPlannerPage';
+import NotesPage from './pages/NotesPage';
 
 // ----- Root App Component -----
 function App() {
@@ -46,6 +48,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <DSATrackerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/study-planner"
+            element={
+              <ProtectedRoute>
+                <StudyPlannerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notes"
+            element={
+              <ProtectedRoute>
+                <NotesPage />
               </ProtectedRoute>
             }
           />
