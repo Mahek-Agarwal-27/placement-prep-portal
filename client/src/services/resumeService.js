@@ -6,13 +6,11 @@ const resumeService = {
    * @param {FormData} formData - Contains the 'resume' file and optional 'jobDescription' text
    */
   analyzeResume: async (formData) => {
-    // We must ensure the headers are set to multipart/form-data
-    // Axios usually sets this automatically when passing FormData, but we can enforce it.
-    const response = await api.post('/resumes/analyze', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // Do NOT manually set Content-Type for FormData.
+    // Axios auto-sets multipart/form-data WITH the correct boundary when it
+    // detects a FormData object. Setting it manually strips the boundary and
+    // breaks multer's ability to parse the uploaded file on the server.
+    const response = await api.post('/resumes/analyze', formData);
     return response.data;
   },
 

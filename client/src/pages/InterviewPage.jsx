@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import Logo from '../components/Logo';
-import ThemeToggle from '../components/ThemeToggle';
+import Navbar from '../components/Navbar';
 import interviewService from '../services/interviewService';
+import { 
+  MessageSquare, 
+  Plus, 
+  Send, 
+  Bot, 
+  User, 
+  Award, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Lightbulb, 
+  Loader2, 
+  Check,
+  Trash2
+} from 'lucide-react';
 
 const InterviewPage = () => {
-  const { user, logout } = useAuth();
-  
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   
@@ -15,7 +24,7 @@ const InterviewPage = () => {
   const [type, setType] = useState('Technical');
   const [topic, setTopic] = useState('');
   
-  // Active Interview State
+  // Active Session State
   const [activeSession, setActiveSession] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -43,7 +52,6 @@ const InterviewPage = () => {
     fetchHistory();
   }, []);
 
-  // Scroll to bottom of chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeSession?.messages, isSending]);
@@ -64,7 +72,7 @@ const InterviewPage = () => {
         fetchHistory();
       }
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to initialize interview. Ensure Gemini API key is configured.');
+      setError(e.response?.data?.message || 'Failed to initialize interview session.');
     } finally {
       setIsStarting(false);
     }
@@ -78,7 +86,6 @@ const InterviewPage = () => {
     setIsSending(true);
     setError('');
     
-    // Optimistic UI updates
     const updatedMessages = [...activeSession.messages, { role: 'user', content: textToSend }];
     setActiveSession({ ...activeSession, messages: updatedMessages });
     
@@ -96,7 +103,7 @@ const InterviewPage = () => {
 
   const handleEndInterview = async () => {
     if (!activeSession) return;
-    if (!window.confirm('Finish the interview and request AI grading evaluation?')) return;
+    if (!window.confirm('Finish the interview and request AI evaluation?')) return;
     
     setIsEnding(true);
     setError('');
@@ -108,7 +115,7 @@ const InterviewPage = () => {
         fetchHistory();
       }
     } catch (e) {
-      setError('Failed to grade the interview transcript. Ensure your Gemini API Key is valid.');
+      setError('Failed to grade the interview transcript.');
     } finally {
       setIsEnding(false);
     }
@@ -126,111 +133,117 @@ const InterviewPage = () => {
     }
   };
 
+  const handleDeleteSession = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this past interview session?')) return;
+    try {
+      await interviewService.deleteInterview(id);
+      if (activeSession?._id === id) {
+        setActiveSession(null);
+      }
+      fetchHistory();
+    } catch (err) {
+      setError('Failed to delete interview session.');
+    }
+  };
+
   return (
-    <div className="min-h-screen text-slate-100 flex flex-col h-screen overflow-hidden">
-      {/* Navbar */}
-      <header className="glass-panel px-6 py-4 flex justify-between items-center shrink-0 z-10">
-        <div className="flex items-center gap-2">
-          <Link to="/dashboard">
-            <Logo />
-          </Link>
-          <span className="text-xs bg-indigo-950 text-indigo-300 font-semibold px-2 py-0.5 rounded border border-indigo-800">Beta</span>
-        </div>
-        <nav className="hidden sm:flex items-center gap-5 text-sm font-semibold">
-          <Link to="/dashboard" className="text-slate-400 hover:text-white transition-colors">Dashboard</Link>
-          <Link to="/dsa-tracker" className="text-slate-400 hover:text-white transition-colors">DSA Tracker</Link>
-          <Link to="/study-planner" className="text-slate-400 hover:text-white transition-colors">Study Planner</Link>
-          <Link to="/notes" className="text-slate-400 hover:text-white transition-colors">AI Notes</Link>
-          <Link to="/resume-analyzer" className="text-slate-400 hover:text-white transition-colors">Resume Analyzer</Link>
-          <Link to="/mock-interview" className="text-rose-400 border-b-2 border-rose-500 pb-1">Mock Interview</Link>
-        </nav>
-        <div className="flex items-center gap-3">
-          <span className="text-slate-300 text-sm hidden md:inline">Hi, <strong className="text-white">{user?.name}</strong></span>
-          <ThemeToggle />
-          <button onClick={logout} className="btn-secondary px-4 py-2 text-xs">Sign Out</button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-50 flex flex-col h-screen overflow-hidden">
+      <Navbar />
 
       <main className="flex-1 flex overflow-hidden">
-        {/* Sidebar History */}
-        <aside className="w-72 border-r border-slate-800 bg-slate-900/40 flex flex-col shrink-0 overflow-y-auto">
-          <div className="p-4 border-b border-slate-800">
+        
+        {/* Left Sidebar: Session History */}
+        <aside className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
+          <div className="p-4 border-b border-slate-200">
             <button 
               onClick={() => setActiveSession(null)} 
-              className="btn-primary w-full justify-center flex items-center gap-2 bg-rose-600 hover:bg-rose-500 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+              className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              New Interview
+              <Plus className="w-4 h-4" /> Start New Interview
             </button>
           </div>
           
           <div className="p-4 flex-1">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-1">Interview Sessions</h3>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Past Interviews</h3>
             {loadingHistory ? (
-              <div className="text-center py-4 text-sm text-slate-500">Loading history...</div>
+              <div className="text-center py-6 text-xs text-slate-400">Loading history...</div>
             ) : history.length === 0 ? (
-              <div className="text-center py-4 text-sm text-slate-500">No previous sessions.</div>
+              <div className="text-center py-6 text-xs text-slate-400">No previous sessions.</div>
             ) : (
-              <ul className="space-y-2">
+              <div className="space-y-2">
                 {history.map(item => (
-                  <li key={item._id}>
-                    <button 
-                      onClick={() => handleSelectPastSession(item)}
-                      className={`w-full text-left p-3 rounded-xl transition-all border flex flex-col gap-1.5 ${
-                        activeSession?._id === item._id 
-                          ? 'bg-rose-500/10 border-rose-500/50' 
-                          : 'bg-slate-900 border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <span className="text-sm font-semibold text-white truncate w-3/4">{item.topic}</span>
+                  <div 
+                    key={item._id}
+                    onClick={() => handleSelectPastSession(item)}
+                    className={`w-full text-left p-3 rounded-xl transition-all border flex flex-col gap-1 relative group cursor-pointer ${
+                      activeSession?._id === item._id 
+                        ? 'bg-blue-50/70 border-blue-200' 
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold text-slate-900 truncate w-2/3">{item.topic}</span>
+                      
+                      <div className="flex items-center gap-1.5">
                         {item.status === 'completed' ? (
-                          <span className="text-xs font-bold text-rose-400">{item.feedback?.score}%</span>
+                          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                            {item.feedback?.score}%
+                          </span>
                         ) : (
-                          <span className="text-[10px] bg-amber-950 text-amber-400 font-bold px-1.5 py-0.2 rounded border border-amber-900">Active</span>
+                          <span className="text-[10px] bg-amber-50 text-amber-700 font-semibold px-1.5 py-0.5 rounded border border-amber-200">
+                            Active
+                          </span>
                         )}
+
+                        <button
+                          onClick={(e) => handleDeleteSession(e, item._id)}
+                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded transition-opacity"
+                          title="Delete interview session"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <div className="text-[10px] text-slate-500 flex justify-between w-full">
-                        <span>{item.type}</span>
-                        <span>{new Date(item.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </button>
-                  </li>
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 flex justify-between w-full mt-1">
+                      <span>{item.type}</span>
+                      <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         </aside>
 
-        {/* Workspace */}
-        <section className="flex-1 flex flex-col bg-transparent overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500 rounded-full blur-[150px] opacity-5 pointer-events-none"></div>
-
+        {/* Main Workspace Area */}
+        <section className="flex-1 flex flex-col bg-slate-50 overflow-hidden relative">
+          
           {error && (
-            <div className="p-4 mx-6 mt-4 rounded-xl bg-rose-950/50 border border-rose-800 text-rose-300 text-sm text-center shrink-0 z-10">
+            <div className="p-3 mx-6 mt-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center shrink-0 z-10">
               {error}
             </div>
           )}
 
           {!activeSession ? (
-            // Setup / Intro Screen
-            <div className="max-w-xl mx-auto my-auto p-6 space-y-8 animate-fade-in relative z-10 w-full">
-              <div className="text-center space-y-2">
-                <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center justify-center gap-3">
-                  <span className="text-4xl">🎙️</span> AI Mock Recruiter
-                </h1>
-                <p className="text-slate-450 text-sm">Practice technical, behavioral, or system design interviews. Get questions generated dynamically by Gemini AI and receive grading metrics.</p>
+            /* Setup Screen */
+            <div className="max-w-md mx-auto my-auto p-6 space-y-6 animate-fade-in w-full bg-white border border-slate-200 rounded-2xl shadow-sm">
+              <div className="text-center space-y-1.5">
+                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-2 border border-blue-100">
+                  <Bot className="w-6 h-6" />
+                </div>
+                <h1 className="text-xl font-bold text-slate-900">AI Mock Recruiter</h1>
+                <p className="text-xs text-slate-500">Practice real-time technical and behavioral interview questions with Gemini AI feedback.</p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-450 uppercase tracking-wider">Interview Type</label>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Interview Type</label>
                   <select 
                     value={type} 
                     onChange={(e) => setType(e.target.value)}
-                    className="input-field py-3"
+                    className="input-field py-2 text-xs"
                   >
                     <option value="Technical">Technical Round</option>
                     <option value="Behavioral">Behavioral / HR Round</option>
@@ -238,204 +251,183 @@ const InterviewPage = () => {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-450 uppercase tracking-wider">Focus Topic / Tech Stack</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Focus Topic / Tech Stack</label>
                   <input 
                     type="text" 
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g. React & Node, Java Algorithms, General HR, System Architecture"
-                    className="input-field py-3"
+                    placeholder="e.g. React & Node.js, Java DSA, System Design, HR"
+                    className="input-field py-2 text-xs"
                   />
                 </div>
 
                 <button 
                   onClick={handleStart}
                   disabled={isStarting}
-                  className="btn-primary w-full justify-center py-4 bg-rose-600 hover:bg-rose-500 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)] font-bold text-base disabled:opacity-50"
+                  className="btn-primary w-full py-2.5 text-xs font-semibold"
                 >
                   {isStarting ? (
                     <span className="flex items-center gap-2">
-                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      Starting Interview...
+                      <Loader2 className="w-4 h-4 animate-spin" /> Starting Session...
                     </span>
-                  ) : 'Start Interview'}
-                </button>
-              </div>
-            </div>
-          ) : activeSession.status === 'active' ? (
-            // Active Interview Room Chat
-            <div className="flex-1 flex flex-col overflow-hidden relative z-10 h-full">
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/40 flex justify-between items-center shrink-0">
-                <div>
-                  <h2 className="font-bold text-white flex items-center gap-2">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Mock Interview: {activeSession.topic}
-                  </h2>
-                  <p className="text-xs text-slate-450 font-semibold">{activeSession.type} Round • Interviewer: Recruiter Bot</p>
-                </div>
-                <button 
-                  onClick={handleEndInterview} 
-                  disabled={isEnding}
-                  className="btn-secondary text-rose-450 hover:bg-rose-950/20 border-rose-500/30 px-4 py-2 text-xs flex items-center gap-2 font-bold"
-                >
-                  {isEnding ? 'Grading...' : 'Finish & Grade'}
-                </button>
-              </div>
-
-              {/* Chat Log */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {activeSession.messages.map((msg, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} animate-fade-in`}
-                  >
-                    <div className={`max-w-[75%] rounded-2xl p-4 text-sm leading-relaxed border shadow-md ${
-                      msg.role === 'assistant'
-                        ? 'bg-slate-900 border-slate-800 text-slate-200 rounded-tl-none'
-                        : 'bg-rose-600/10 border-rose-500/30 text-rose-100 rounded-tr-none'
-                    }`}>
-                      {msg.role === 'assistant' && (
-                        <p className="text-[10px] text-rose-400 font-bold uppercase tracking-wider mb-1">AI Recruiter</p>
-                      )}
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                  </div>
-                ))}
-                
-                {isSending && (
-                  <div className="flex justify-start">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-none p-4 max-w-[75%] flex items-center gap-2">
-                      <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider">AI Recruiter is typing</span>
-                      <div className="flex gap-1">
-                        <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce"></span>
-                        <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce delay-100"></span>
-                        <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce delay-200"></span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-
-              {/* Chat Input */}
-              <div className="p-4 border-t border-slate-800 bg-slate-900/20 shrink-0 flex gap-3 items-end">
-                <textarea 
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  className="input-field min-h-[50px] max-h-[120px] resize-none py-3 px-4 flex-1 text-sm bg-slate-950 border-slate-800"
-                  placeholder="Type your response here... (Press Enter to Send)"
-                  disabled={isSending}
-                ></textarea>
-                <button 
-                  onClick={handleSendMessage}
-                  disabled={isSending || !inputMessage.trim()}
-                  className="btn-primary p-3 bg-rose-600 hover:bg-rose-500 border-rose-500 shrink-0 shadow-[0_0_10px_rgba(244,63,94,0.3)] disabled:opacity-50"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                  </svg>
+                  ) : 'Start Interview Round'}
                 </button>
               </div>
             </div>
           ) : (
-            // Completed Interview / Results View
-            <div className="flex-1 overflow-y-auto p-6 md:p-10 relative z-10">
-              <div className="max-w-4xl mx-auto space-y-8">
-                {/* Header */}
-                <div className="flex justify-between items-start border-b border-slate-800 pb-6">
-                  <div>
-                    <h2 className="text-3xl font-extrabold text-white">Interview Feedback Report</h2>
-                    <p className="text-slate-450 text-sm mt-1">Topic: <span className="font-semibold text-white">{activeSession.topic}</span> • Round: {activeSession.type}</p>
-                    <span className="inline-block mt-3 text-[10px] bg-rose-950 text-rose-450 font-bold px-2 py-0.5 rounded border border-rose-800">
-                      Evaluation Complete
-                    </span>
+            /* Active Interview Chat Room */
+            <div className="flex-1 flex flex-col overflow-hidden relative z-10 h-full bg-white">
+              
+              {/* Header Bar */}
+              <div className="px-6 py-3.5 border-b border-slate-200 bg-white flex justify-between items-center shrink-0 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                    <Bot className="w-4 h-4" />
                   </div>
-                  
-                  {/* Score Ring */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-24 h-24 rounded-full flex items-center justify-center border-4 border-rose-900 border-t-rose-500 bg-rose-950/30 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
-                      <span className="text-3xl font-extrabold">{activeSession.feedback?.score}</span>
-                    </div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold">Overall Rating</span>
+                  <div>
+                    <h2 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                      Mock Interview: {activeSession.topic}
+                      {activeSession.status === 'active' && (
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      )}
+                    </h2>
+                    <p className="text-[11px] text-slate-400">{activeSession.type} Round • AI Corporate Recruiter</p>
                   </div>
                 </div>
 
-                {/* Recruiter Summary */}
-                {activeSession.feedback?.generalTips && (
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <span className="text-rose-400">💡</span> Recruiter Summary
-                    </h3>
-                    <p className="text-slate-350 text-sm leading-relaxed whitespace-pre-line">
-                      {activeSession.feedback.generalTips}
-                    </p>
+                {activeSession.status === 'active' && (
+                  <button 
+                    onClick={handleEndInterview} 
+                    disabled={isEnding}
+                    className="btn-secondary text-xs py-1.5 px-3 border-slate-200 hover:border-slate-300"
+                  >
+                    {isEnding ? 'Evaluating...' : 'Finish & Grade'}
+                  </button>
+                )}
+              </div>
+
+              {/* Chat Message Transcript */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
+                {activeSession.messages.map((msg, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`flex items-start gap-3 ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} animate-fade-in`}
+                  >
+                    {msg.role === 'assistant' && (
+                      <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                    )}
+
+                    <div className={`max-w-[75%] rounded-2xl p-4 text-xs leading-relaxed border shadow-sm ${
+                      msg.role === 'assistant'
+                        ? 'bg-white border-slate-200 text-slate-800 rounded-tl-none'
+                        : 'bg-blue-600 text-white border-blue-600 rounded-tr-none'
+                    }`}>
+                      {msg.role === 'assistant' && (
+                        <p className="text-[10px] text-blue-600 font-semibold uppercase tracking-wider mb-1">AI Recruiter</p>
+                      )}
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+
+                    {msg.role === 'user' && (
+                      <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 mt-1 font-semibold text-xs border border-slate-300">
+                        {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {isSending && (
+                  <div className="flex items-center gap-3 justify-start animate-fade-in">
+                    <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
+                      <Bot className="w-4 h-4" />
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3 shadow-sm flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></span>
+                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                    </div>
                   </div>
                 )}
 
-                {/* Strengths & Weaknesses Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Strengths */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <span className="text-emerald-400">🔥</span> Key Strengths
-                    </h3>
-                    <ul className="space-y-3">
-                      {activeSession.feedback?.strengths?.map((item, idx) => (
-                        <li key={idx} className="text-sm text-slate-350 flex items-start gap-2.5">
-                          <span className="text-emerald-500 mt-0.5">•</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                      {(!activeSession.feedback?.strengths || activeSession.feedback.strengths.length === 0) && (
-                        <li className="text-sm text-slate-500">No strengths documented.</li>
-                      )}
-                    </ul>
-                  </div>
-
-                  {/* Weaknesses */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <span className="text-rose-450">⚠️</span> Areas to Improve
-                    </h3>
-                    <ul className="space-y-3">
-                      {activeSession.feedback?.weaknesses?.map((item, idx) => (
-                        <li key={idx} className="text-sm text-slate-350 flex items-start gap-2.5">
-                          <span className="text-rose-500 mt-0.5">•</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                      {(!activeSession.feedback?.weaknesses || activeSession.feedback.weaknesses.length === 0) && (
-                        <li className="text-sm text-slate-500">No weaknesses documented.</li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Transcript Review Accordion */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Full Transcript Review</h3>
-                  <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 border-t border-slate-800 pt-4">
-                    {activeSession.messages.map((msg, idx) => (
-                      <div key={idx} className="text-sm">
-                        <span className={`font-bold ${msg.role === 'assistant' ? 'text-rose-400' : 'text-slate-400'}`}>
-                          {msg.role === 'assistant' ? 'Interviewer' : 'You'}:
-                        </span>
-                        <p className="text-slate-350 mt-1 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                {/* Evaluation Results Card (If session completed) */}
+                {activeSession.status === 'completed' && activeSession.feedback && (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5 my-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-5 h-5 text-blue-600" />
+                        <h3 className="font-bold text-slate-900 text-sm">Evaluation Report</h3>
                       </div>
-                    ))}
+                      <span className="text-sm font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
+                        {activeSession.feedback.score}/100
+                      </span>
+                    </div>
+
+                    {activeSession.feedback.generalTips && (
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed">
+                        <p className="font-semibold text-slate-900 mb-1">Recruiter Summary</p>
+                        {activeSession.feedback.generalTips}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-2">
+                        <p className="font-semibold text-emerald-700 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Key Strengths
+                        </p>
+                        <ul className="space-y-1 text-slate-600">
+                          {activeSession.feedback.strengths?.map((s, i) => (
+                            <li key={i}>• {s}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="font-semibold text-amber-700 flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" /> Areas for Improvement
+                        </p>
+                        <ul className="space-y-1 text-slate-600">
+                          {activeSession.feedback.weaknesses?.map((w, i) => (
+                            <li key={i}>• {w}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Chat Input Bar */}
+              {activeSession.status === 'active' && (
+                <div className="p-4 border-t border-slate-200 bg-white shrink-0">
+                  <div className="flex gap-2 max-w-4xl mx-auto">
+                    <input 
+                      type="text" 
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Type your response here..."
+                      className="input-field text-xs py-2.5"
+                      disabled={isSending}
+                    />
+                    <button 
+                      onClick={handleSendMessage}
+                      disabled={isSending || !inputMessage.trim()}
+                      className="btn-primary px-4 py-2 text-xs shrink-0"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              </div>
+              )}
+
             </div>
           )}
+
         </section>
       </main>
     </div>

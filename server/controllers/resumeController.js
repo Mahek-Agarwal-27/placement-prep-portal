@@ -1,15 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const { PDFParse } = require('pdf-parse');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const pdfParse = require('pdf-parse');
 const multer = require('multer');
 const Resume = require('../models/Resume');
 const asyncHandler = require('../middleware/errorHandler');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
-
-// Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy-key');
-const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+const { callGeminiWithRetry } = require('../utils/geminiHelper');
 
 // Configure Multer for PDF uploads
 const storage = multer.diskStorage({
@@ -126,63 +122,29 @@ exports.analyzeResume = asyncHandler(async (req, res) => {
   try {
     // 1. Extract text from PDF
     const dataBuffer = fs.readFileSync(filePath);
-    const parser = new PDFParse({ data: dataBuffer });
-    const pdfData = await parser.getText();
+    const pdfData = await pdfParse(dataBuffer);
     const resumeText = pdfData.text;
 
-    // 2. Build Prompt for Gemini (asking ONLY for suggestions, not score)
+    // 2. Build Prompt for Gemini (optimized for maximum speed & minimal tokens)
     const prompt = `
-You are an expert technical recruiter analyzing a resume.
-I am providing a candidate's parsed resume text ${jobDescription ? 'and a target Job Description' : ''}.
-Analyze the resume and provide feedback in strict JSON format. Do not use markdown formatting blocks around the JSON (like \`\`\`json), just output the raw JSON string directly.
-
-The JSON MUST match this structure exactly:
+You are a technical recruiter. Analyze the candidate resume text ${jobDescription ? 'against the target Job Description' : ''} and output ONLY a raw JSON string matching this schema:
 {
   "feedback": {
-    "keywordMatching": ["<gap/suggestion 1>", "<gap/suggestion 2>"],
-    "formatting": ["<formatting issue 1>", "<formatting issue 2>"],
-    "bulletPoints": ["<bullet point rewrite suggestion 1>", "<bullet point rewrite suggestion 2>"],
-    "generalAdvice": "<A short paragraph summarizing overall thoughts>"
+    "keywordMatching": ["Max 2 short items describing keyword gaps/suggestions"],
+    "formatting": ["Max 2 short items about formatting or section layout"],
+    "bulletPoints": ["Max 2 short rewrite examples of bullet points to increase impact"],
+    "generalAdvice": "A single short sentence summarizing the feedback"
   }
 }
+Keep points extremely concise, direct, and actionable. Do not use markdown backticks or block wrappers.
 
 ${jobDescription ? `\n--- TARGET JOB DESCRIPTION ---\n${jobDescription}\n` : ''}
 --- CANDIDATE RESUME ---
 ${resumeText}
 `;
 
-    // 3. Call Gemini with a 20-second timeout and 1x retry on failure
-    const generateWithTimeoutAndRetry = async (promptText) => {
-      let attempt = 1;
-      const maxAttempts = 2;
-      const timeoutMs = 20000;
-      
-      while (attempt <= maxAttempts) {
-        try {
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Gemini API timeout: Took longer than 20s to respond.')), timeoutMs)
-          );
-          
-          console.log(`🤖 Resume AI Attempt ${attempt}/${maxAttempts} running...`);
-          const result = await Promise.race([
-            model.generateContent(promptText),
-            timeoutPromise
-          ]);
-          
-          return result.response.text();
-        } catch (err) {
-          console.warn(`⚠️ Resume AI Attempt ${attempt} failed:`, err.message);
-          if (attempt === maxAttempts) {
-            throw err;
-          }
-          attempt++;
-          // Wait 1 second before retrying
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-      }
-    };
-
-    const responseText = await generateWithTimeoutAndRetry(prompt);
+    // 3. Call Gemini with 3 attempts and exponential backoff
+    const responseText = await callGeminiWithRetry(prompt, { maxAttempts: 3, timeoutMs: 25000 });
     
     // Clean up response if it contains markdown formatting
     const cleanedJsonText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -205,7 +167,7 @@ ${resumeText}
       fileName,
       fileUrl,
       jobDescription: jobDescription || '',
-      score: finalScore,
+      atsScore: finalScore,
       feedback: aiAnalysis.feedback || {
         keywordMatching: [],
         formatting: [],
@@ -214,19 +176,38 @@ ${resumeText}
       },
     });
 
+    const AIHistory = require('../models/AIHistory');
+    const Activity = require('../models/Activity');
+    const Notification = require('../models/Notification');
+
+    // Asynchronously log to AIHistory, Activity, and Notification (non-blocking)
+    Promise.all([
+      AIHistory.create({
+        user: req.user.id,
+        category: 'resume',
+        title: `Resume Scan: ${fileName || 'Uploaded Resume'}`,
+        content: `ATS Score: ${finalScore}/100. Advice: ${aiAnalysis.feedback?.generalAdvice || 'Resume scanned.'}`,
+        metadata: { atsScore: finalScore },
+      }),
+      Activity.create({
+        user: req.user.id,
+        type: 'resume',
+        title: 'Uploaded & Analyzed Resume',
+        description: `Achieved ATS Score of ${finalScore}/100`,
+      }),
+      Notification.create({
+        user: req.user.id,
+        type: 'resume',
+        title: 'Resume Analysis Completed',
+        message: `Your resume "${fileName || 'Resume'}" scored ${finalScore}/100 ATS match.`,
+      })
+    ]).catch(err => console.error('Auto-logging error in resume scan:', err.message));
+
     res.status(201).json(successResponse(resumeEntry, 'Resume analyzed successfully.'));
   } catch (error) {
-    console.error('Final Resume Analysis Error:', error);
-    const errMsg = error.message || '';
-    let clientMessage = 'Failed to analyze resume.';
-    if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota')) {
-      clientMessage = 'Gemini API quota exceeded. Daily limits apply on the free tier. Please try again in 1 minute, or provide a different API key.';
-    } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('api key')) {
-      clientMessage = 'Invalid Gemini API Key. Please verify the key value in server/.env configuration.';
-    } else {
-      clientMessage = errMsg || 'An error occurred while communicating with the Gemini AI service.';
-    }
-    res.status(500).json(errorResponse(clientMessage));
+    console.error('Final Resume Analysis Error:', error.message);
+    // geminiHelper already translates errors to user-friendly messages
+    res.status(503).json(errorResponse(error.message || 'AI service is temporarily unavailable. Please try again later.'));
   }
 });
 

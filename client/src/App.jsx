@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import SplashScreen from './components/SplashScreen';
 
 // Import Pages
 import LoginPage from './pages/LoginPage';
@@ -14,92 +15,81 @@ import NotesPage from './pages/NotesPage';
 import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage';
 import InterviewPage from './pages/InterviewPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import SettingsPage from './pages/SettingsPage';
+import AIHistoryPage from './pages/AIHistoryPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
+import FloatingAIAssistant from './components/FloatingAIAssistant';
 
 // ----- Root App Component -----
 function App() {
+  // Show splash only once per browser session
+  const [splashDone, setSplashDone] = useState(
+    () => sessionStorage.getItem('splash-shown') === 'true'
+  );
+
+  const handleSplashDone = () => {
+    sessionStorage.setItem('splash-shown', 'true');
+    setSplashDone(true);
+  };
+
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Main Landing Redirects to dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <>
+      {/* Splash Screen — shown once per session */}
+      {!splashDone && <SplashScreen onDone={handleSplashDone} />}
 
-          {/* Public Auth Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Main Landing Redirects to dashboard */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
+            {/* Public Auth Routes */}
+            <Route path="/login"  element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
-          <Route
-            path="/dsa-tracker"
-            element={
-              <ProtectedRoute>
-                <DSATrackerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/study-planner"
-            element={
-              <ProtectedRoute>
-                <StudyPlannerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/notes"
-            element={
-              <ProtectedRoute>
-                <NotesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/resume-analyzer"
-            element={
-              <ProtectedRoute>
-                <ResumeAnalyzerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/mock-interview"
-            element={
-              <ProtectedRoute>
-                <InterviewPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute>
-                <AnalyticsPage />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute><ProfilePage /></ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute><SettingsPage /></ProtectedRoute>
+            } />
+            <Route path="/ai-history" element={
+              <ProtectedRoute><AIHistoryPage /></ProtectedRoute>
+            } />
+            <Route path="/dsa-tracker" element={
+              <ProtectedRoute><DSATrackerPage /></ProtectedRoute>
+            } />
+            <Route path="/study-planner" element={
+              <ProtectedRoute><StudyPlannerPage /></ProtectedRoute>
+            } />
+            <Route path="/notes" element={
+              <ProtectedRoute><NotesPage /></ProtectedRoute>
+            } />
+            <Route path="/resume-analyzer" element={
+              <ProtectedRoute><ResumeAnalyzerPage /></ProtectedRoute>
+            } />
+            <Route path="/mock-interview" element={
+              <ProtectedRoute><InterviewPage /></ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
+            } />
 
-          {/* Fallback — redirect unknown routes */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+          <FloatingAIAssistant />
+        </Router>
+      </AuthProvider>
+    </>
   );
 }
 

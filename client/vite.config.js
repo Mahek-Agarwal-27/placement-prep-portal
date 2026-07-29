@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // Proxy API requests to backend during development
+    strictPort: true, // Guarantees Vite always uses port 5173 and fails rather than switching ports
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

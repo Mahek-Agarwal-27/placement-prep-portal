@@ -20,8 +20,8 @@ const ResumeSchema = new mongoose.Schema(
       type: String, // Optional target JD
       default: '',
     },
-    score: {
-      type: Number, // Overall ATS score
+    atsScore: {
+      type: Number,
       default: 0,
     },
     feedback: {

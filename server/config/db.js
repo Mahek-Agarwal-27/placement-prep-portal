@@ -11,20 +11,37 @@
 const mongoose = require('mongoose');
 const dns      = require('dns');
 
-// ── DNS Override ──────────────────────────────────────────────────────────────
-// Force Node.js to use reliable public DNS servers instead of the system ISP DNS
-// which may not correctly resolve MongoDB Atlas SRV (_mongodb._tcp.*) records.
-dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+// Safely set public DNS servers, fallback if restricted
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  // Ignore DNS set error
+}
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log('🔄 Connecting to MongoDB Atlas...');
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 3000
+    });
+    console.log(`✅ MongoDB Atlas Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    // Exit process with failure so the process manager can restart it
-    process.exit(1);
+    console.warn(`⚠️ MongoDB Atlas DNS/Connection Failed: ${error.message}`);
+    console.log('🔄 Failover: Connecting to Local MongoDB (mongodb://127.0.0.1:27017/placement-prep-portal)...');
+    try {
+      const localConn = await mongoose.connect(process.env.MONGODB_URI_LOCAL || 'mongodb://127.0.0.1:27017/placement-prep-portal', {
+        serverSelectionTimeoutMS: 3000
+      });
+      console.log(`✅ Local MongoDB Connected: ${localConn.connection.host}`);
+    } catch (localError) {
+      console.error(`❌ Local MongoDB Connection Error: ${localError.message}`);
+      console.error('\n========================================================================');
+      console.error('DATABASE CONNECTION GUIDE:');
+      console.error('1. Check internet connection for MongoDB Atlas.');
+      console.error('2. Ensure your IP is whitelisted in MongoDB Atlas Network Access (0.0.0.0/0).');
+      console.error('3. Or start local MongoDB service on port 27017.');
+      console.error('========================================================================\n');
+    }
   }
 };
 

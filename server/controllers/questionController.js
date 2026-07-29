@@ -56,11 +56,25 @@ exports.addQuestion = asyncHandler(async (req, res) => {
     solvedAt:   status === 'solved' ? new Date() : null,
   });
 
-  // If the question is marked solved, increment the user's stat counter
+  // If the question is marked solved, increment user stat counter and log activity
   if (status === 'solved') {
-    await User.findByIdAndUpdate(req.user.id, {
-      $inc: { 'stats.totalDSASolved': 1 },
-    });
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $inc: { 'stats.totalDSASolved': 1 } },
+      { new: true }
+    );
+    const { evaluateAchievements } = require('../utils/achievementEngine');
+    if (evaluateAchievements(user)) {
+      await user.save();
+    }
+
+    const Activity = require('../models/Activity');
+    Activity.create({
+      user: req.user.id,
+      type: 'dsa',
+      title: `Completed ${difficulty} DSA Problem`,
+      description: `${title} (${topic || 'DSA'})`,
+    }).catch(() => {});
   }
 
   res.status(201).json(successResponse(question, 'Question added successfully'));
@@ -92,11 +106,17 @@ exports.updateQuestion = asyncHandler(async (req, res) => {
     question.status = status;
 
     if (status === 'solved' && prevStatus !== 'solved') {
-      // Newly solved — increment user counter
+      // Newly solved — increment user counter and check achievements
       question.solvedAt = new Date();
-      await User.findByIdAndUpdate(req.user.id, {
-        $inc: { 'stats.totalDSASolved': 1 },
-      });
+      const user = await User.findByIdAndUpdate(
+        req.user.id,
+        { $inc: { 'stats.totalDSASolved': 1 } },
+        { new: true }
+      );
+      const { evaluateAchievements } = require('../utils/achievementEngine');
+      if (evaluateAchievements(user)) {
+        await user.save();
+      }
     } else if (status !== 'solved' && prevStatus === 'solved') {
       // Un-solving — decrement user counter
       question.solvedAt = null;

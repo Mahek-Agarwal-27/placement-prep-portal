@@ -54,14 +54,22 @@ exports.addTask = asyncHandler(async (req, res) => {
     completedAt:    taskStatus === 'completed' ? new Date() : null,
   });
 
-  // If task is marked completed, increment user stats
+  // If task is marked completed, increment user stats and check achievements
   if (taskStatus === 'completed') {
-    await User.findByIdAndUpdate(req.user.id, {
-      $inc: {
-        'stats.totalTasksDone':  1,
-        'stats.totalStudyHours': estimatedHours || 0,
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        $inc: {
+          'stats.totalTasksDone':  1,
+          'stats.totalStudyHours': estimatedHours || 0,
+        },
       },
-    });
+      { new: true }
+    );
+    const { evaluateAchievements } = require('../utils/achievementEngine');
+    if (evaluateAchievements(user)) {
+      await user.save();
+    }
   }
 
   res.status(201).json(successResponse(task, 'Task created successfully'));
@@ -96,12 +104,20 @@ exports.updateTask = asyncHandler(async (req, res) => {
 
     if (status === 'completed' && prevStatus !== 'completed') {
       task.completedAt = new Date();
-      await User.findByIdAndUpdate(req.user.id, {
-        $inc: {
-          'stats.totalTasksDone':  1,
-          'stats.totalStudyHours': task.estimatedHours || 0,
+      const user = await User.findByIdAndUpdate(
+        req.user.id,
+        {
+          $inc: {
+            'stats.totalTasksDone':  1,
+            'stats.totalStudyHours': task.estimatedHours || 0,
+          },
         },
-      });
+        { new: true }
+      );
+      const { evaluateAchievements } = require('../utils/achievementEngine');
+      if (evaluateAchievements(user)) {
+        await user.save();
+      }
     } else if (status !== 'completed' && prevStatus === 'completed') {
       task.completedAt = null;
       await User.findByIdAndUpdate(req.user.id, {

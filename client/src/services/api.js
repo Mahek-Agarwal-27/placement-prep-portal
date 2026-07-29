@@ -14,8 +14,11 @@ const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 15000, // 15 s timeout
+  // Do NOT set a default Content-Type here.
+  // Axios auto-detects it per request:
+  //   - JSON body  → 'application/json'
+  //   - FormData   → 'multipart/form-data; boundary=...' (boundary is required for multer)
+  timeout: 30000, // 30s — resume analysis + Gemini can take time
 });
 
 // ── Request Interceptor ───────────────────────────────────────────────────────
@@ -33,10 +36,16 @@ api.interceptors.request.use(
 
 // ── Response Interceptor ──────────────────────────────────────────────────────
 // Handle 401 globally: clear storage and redirect to login
+// BUT skip redirect for auth endpoints (login/signup) — those 401s are just
+// "wrong credentials" and should be handled by the form's own catch block.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || '';
+    const isAuthEndpoint =
+      requestUrl.includes('/auth/login') || requestUrl.includes('/auth/signup');
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

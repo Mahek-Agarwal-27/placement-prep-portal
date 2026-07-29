@@ -10,6 +10,12 @@ const aiService = {
     const response = await api.post('/ai/generate', data);
     return response.data;
   },
+
+  // Alias for backward compatibility
+  generateContent: async (data) => {
+    const response = await api.post('/ai/generate', data);
+    return response.data;
+  },
 };
 
 export default aiService;

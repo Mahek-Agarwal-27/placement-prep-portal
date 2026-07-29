@@ -1,11 +1,7 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { callGeminiWithRetry } = require('../utils/geminiHelper');
 const Interview = require('../models/Interview');
 const asyncHandler = require('../middleware/errorHandler');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
-
-// Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy-key');
-const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
 // @desc    Start mock interview session and get first question
 // @route   POST /api/interviews/start
@@ -32,8 +28,7 @@ Introduce yourself briefly as the HireNova AI Recruiter, set a professional, enc
 Keep your response concise, engaging, and under 100 words. Do not print any meta-data, markdown syntax, or headers. Output ONLY the recruiter's dialogue.
 `;
 
-    const result = await model.generateContent(prompt);
-    const firstQuestion = result.response.text().trim();
+    const firstQuestion = await callGeminiWithRetry(prompt, { maxAttempts: 3, timeoutMs: 15000 });
 
     // 2. Create database entry
     const interview = await Interview.create({
@@ -43,15 +38,15 @@ Keep your response concise, engaging, and under 100 words. Do not print any meta
       messages: [
         {
           role: 'assistant',
-          content: firstQuestion,
+          content: firstQuestion.trim(),
         },
       ],
     });
 
     res.status(201).json(successResponse(interview, 'Interview started successfully.'));
   } catch (error) {
-    console.error('Start Interview Error:', error);
-    res.status(500).json(errorResponse('Failed to start interview.'));
+    console.error('Start Interview Error:', error.message);
+    res.status(503).json(errorResponse(error.message || 'AI service is temporarily unavailable. Please try again later.'));
   }
 });
 
@@ -97,17 +92,16 @@ Keep your response professional, focused, and under 120 words. Do not output any
 ${historyText}
 `;
 
-    const result = await model.generateContent(prompt);
-    const nextQuestion = result.response.text().trim();
+    const nextQuestion = await callGeminiWithRetry(prompt, { maxAttempts: 3, timeoutMs: 15000 });
 
     // 3. Save interviewer question to DB
-    interview.messages.push({ role: 'assistant', content: nextQuestion });
+    interview.messages.push({ role: 'assistant', content: nextQuestion.trim() });
     await interview.save();
 
     res.status(200).json(successResponse(interview, 'Response submitted successfully.'));
   } catch (error) {
-    console.error('Submit Response Error:', error);
-    res.status(500).json(errorResponse('Failed to generate follow-up question.'));
+    console.error('Submit Response Error:', error.message);
+    res.status(503).json(errorResponse(error.message || 'AI service is temporarily unavailable. Please try again later.'));
   }
 });
 
@@ -153,11 +147,8 @@ The JSON MUST match this structure exactly:
 ${transcriptText}
 `;
 
-    const result = await model.generateContent(prompt);
-    let responseText = result.response.text().trim();
-
-    // Remove markdown code blocks if AI wrapped the JSON
-    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const result = await callGeminiWithRetry(prompt, { maxAttempts: 3, timeoutMs: 25000 });
+    let responseText = result.replace(/```json/g, '').replace(/```/g, '').trim();
 
     let evaluation;
     try {
@@ -179,8 +170,8 @@ ${transcriptText}
 
     res.status(200).json(successResponse(interview, 'Interview evaluated successfully.'));
   } catch (error) {
-    console.error('Evaluate Interview Error:', error);
-    res.status(500).json(errorResponse('Failed to evaluate interview.'));
+    console.error('Evaluate Interview Error:', error.message);
+    res.status(503).json(errorResponse(error.message || 'AI service is temporarily unavailable. Please try again later.'));
   }
 });
 
@@ -201,4 +192,16 @@ exports.getInterviewById = asyncHandler(async (req, res) => {
     return res.status(404).json(errorResponse('Interview session not found.'));
   }
   res.status(200).json(successResponse(interview, 'Interview details fetched successfully.'));
+});
+
+// @desc    Delete a past interview session
+// @route   DELETE /api/interviews/:id
+// @access  Private
+exports.deleteInterview = asyncHandler(async (req, res) => {
+  const interview = await Interview.findOne({ _id: req.params.id, user: req.user.id });
+  if (!interview) {
+    return res.status(404).json(errorResponse('Interview session not found.'));
+  }
+  await interview.deleteOne();
+  res.status(200).json(successResponse(null, 'Interview session deleted successfully.'));
 });

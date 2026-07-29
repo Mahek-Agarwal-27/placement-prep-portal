@@ -1,17 +1,20 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+/**
+ * controllers/aiController.js
+ * 
+ * Handles AI-related endpoints: Note AI generation and global chat assistant.
+ * Uses shared geminiHelper for model access and retry logic.
+ */
+
 const asyncHandler = require('../middleware/errorHandler');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
+const { callGeminiWithRetry } = require('../utils/geminiHelper');
 
-// Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy-key');
-const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
-
-// @desc    Process prompt with Gemini AI
+// @desc    Process prompt with Gemini AI (Notes AI)
 // @route   POST /api/ai/generate
 // @access  Private
 exports.generateAIResponse = asyncHandler(async (req, res) => {
   const { prompt, context, action } = req.body;
-  console.log(`🤖 Received AI request: action=${action}, context length=${context ? context.length : 0}`);
+  console.log(`🤖 Notes AI request: action=${action}, context length=${context ? context.length : 0}`);
 
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_key_here') {
     return res.status(503).json(errorResponse('Gemini API key is missing or invalid in server configuration.'));
@@ -22,7 +25,6 @@ exports.generateAIResponse = asyncHandler(async (req, res) => {
   }
 
   let finalPrompt = '';
-
   switch (action) {
     case 'summarize':
       finalPrompt = `Summarize the following text clearly and concisely. Highlight the main points:\n\n${context}`;
@@ -34,55 +36,90 @@ exports.generateAIResponse = asyncHandler(async (req, res) => {
       finalPrompt = `Improve the grammar, tone, and clarity of the following text:\n\n${context}`;
       break;
     default:
-      // Custom prompt
       finalPrompt = context ? `${prompt}\n\nContext:\n${context}` : prompt;
   }
 
   try {
-    // Generate AI content with a 15-second timeout and 1x retry on failure
-    const generateWithTimeoutAndRetry = async (promptText) => {
-      let attempt = 1;
-      const maxAttempts = 2;
-      const timeoutMs = 15000;
-      
-      while (attempt <= maxAttempts) {
-        try {
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Gemini API timeout: Took longer than 15s to respond.')), timeoutMs)
-          );
-          
-          console.log(`🤖 Note AI Attempt ${attempt}/${maxAttempts} running...`);
-          const result = await Promise.race([
-            model.generateContent(promptText),
-            timeoutPromise
-          ]);
-          
-          return result.response.text();
-        } catch (err) {
-          console.warn(`⚠️ Note AI Attempt ${attempt} failed:`, err.message);
-          if (attempt === maxAttempts) {
-            throw err;
-          }
-          attempt++;
-          // Wait 1 second before retrying
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-      }
-    };
+    const responseText = await callGeminiWithRetry(finalPrompt, { maxAttempts: 3, timeoutMs: 15000 });
+    
+    // Asynchronously save to AIHistory & Activity timeline (non-blocking)
+    const AIHistory = require('../models/AIHistory');
+    const Activity = require('../models/Activity');
+    const isRoadmap = action === 'roadmap' || (prompt && prompt.toLowerCase().includes('roadmap'));
+    
+    Promise.all([
+      AIHistory.create({
+        user: req.user.id,
+        category: isRoadmap ? 'roadmap' : 'note',
+        title: isRoadmap ? `AI Roadmap: ${prompt || 'Custom Plan'}` : `AI Notes (${action || 'Generate'})`,
+        content: responseText,
+        duration: isRoadmap ? '90 Days' : '',
+      }),
+      Activity.create({
+        user: req.user.id,
+        type: 'ai',
+        title: isRoadmap ? 'Generated AI Roadmap' : 'Generated AI Study Notes',
+        description: `Action: ${action || 'General AI prompt'}`,
+      })
+    ]).catch(err => console.error('Auto-log error in Notes AI:', err.message));
 
-    const responseText = await generateWithTimeoutAndRetry(finalPrompt);
     res.status(200).json(successResponse({ text: responseText }, 'AI generated content successfully.'));
   } catch (error) {
-    console.error('Final Gemini API Error:', error);
-    const errMsg = error.message || '';
-    let clientMessage = 'Failed to generate AI response.';
-    if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota')) {
-      clientMessage = 'Gemini API quota exceeded. Daily limits apply on the free tier. Please try again in 1 minute, or provide a different API key.';
-    } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('api key')) {
-      clientMessage = 'Invalid Gemini API Key. Please verify the key value in server/.env configuration.';
-    } else {
-      clientMessage = errMsg || 'An error occurred while communicating with the Gemini AI service.';
-    }
-    res.status(500).json(errorResponse(clientMessage));
+    console.error('Notes AI Final Error:', error.message);
+    res.status(503).json(errorResponse(error.message));
+  }
+});
+
+// @desc    Global Chat AI for the floating assistant
+// @route   POST /api/ai/chat
+// @access  Private
+exports.chatAIResponse = asyncHandler(async (req, res) => {
+  const { message, history } = req.body;
+
+  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_key_here') {
+    return res.status(503).json(errorResponse('Gemini API key is missing.'));
+  }
+  if (!message) {
+    return res.status(400).json(errorResponse('Message is required.'));
+  }
+
+  let conversationContext = "You are HireNova AI, a helpful, encouraging, and expert placement companion. You help computer science students prepare for technical interviews, DSA, and resume building. Keep your answers concise, structured (use bullet points if needed), and friendly.\n\n";
+
+  if (history && history.length > 0) {
+    conversationContext += "Recent conversation history:\n";
+    history.slice(-5).forEach(msg => {
+      conversationContext += `${msg.sender === 'user' ? 'Student' : 'HireNova AI'}: ${msg.text}\n`;
+    });
+    conversationContext += "\n";
+  }
+
+  const finalPrompt = `${conversationContext}Student: ${message}\nHireNova AI:`;
+
+  try {
+    const responseText = await callGeminiWithRetry(finalPrompt, { maxAttempts: 3, timeoutMs: 15000 });
+
+    // Asynchronously save to AIHistory & Activity timeline (non-blocking)
+    const AIHistory = require('../models/AIHistory');
+    const Activity = require('../models/Activity');
+
+    Promise.all([
+      AIHistory.create({
+        user: req.user.id,
+        category: 'chat',
+        title: `Chat Question: "${message.substring(0, 40)}${message.length > 40 ? '...' : ''}"`,
+        content: `Student: ${message}\n\nHireNova AI: ${responseText}`,
+      }),
+      Activity.create({
+        user: req.user.id,
+        type: 'assistant',
+        title: 'Used AI Assistant',
+        description: `Asked: ${message.substring(0, 50)}`,
+      })
+    ]).catch(err => console.error('Auto-log error in Chat AI:', err.message));
+
+    res.status(200).json(successResponse({ text: responseText }, 'Chat response generated.'));
+  } catch (error) {
+    console.error('Chat AI Final Error:', error.message);
+    res.status(503).json(errorResponse(error.message));
   }
 });

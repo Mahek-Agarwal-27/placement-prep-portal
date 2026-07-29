@@ -44,6 +44,25 @@ const authService = {
     const response = await api.put('/auth/profile', profileData);
     return response.data; // { success, message, data: user }
   },
+
+  /**
+   * Sends a request to send a password reset link to user's email
+   * @param {string} email 
+   */
+  forgotPassword: async (email) => {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  /**
+   * Resets user password using the reset token
+   * @param {string} token 
+   * @param {string} password 
+   */
+  resetPassword: async (token, password) => {
+    const response = await api.put(`/auth/reset-password/${token}`, { password });
+    return response.data;
+  },
 };
 
 export default authService;

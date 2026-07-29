@@ -9,15 +9,15 @@
  *  - Start the HTTP server
  */
 
-const express    = require('express');
-const cors       = require('cors');
-const dotenv     = require('dotenv');
-const path       = require('path');
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const path = require('path');
 
 // Load .env variables before anything else
 dotenv.config();
 
-const connectDB  = require('./config/db');
+const connectDB = require('./config/db');
 
 const app = express();
 
@@ -30,8 +30,9 @@ console.log(`🔑 GEMINI_API_KEY loaded: ${process.env.GEMINI_API_KEY ? 'YES (' 
 // CORS — allow requests from the React dev server and production domain
 app.use(cors({
   origin: [
-    'http://localhost:5173',       // Vite dev server
-    process.env.CLIENT_URL || '*', // Production Vercel URL (set in .env)
+    'http://localhost:5173',
+    'http://localhost:5174',
+    process.env.CLIENT_URL
   ],
   credentials: true,
 }));
@@ -46,15 +47,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── API Routes ────────────────────────────────────────────────────────────────
-app.use('/api/auth',      require('./routes/authRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/questions', require('./routes/questionRoutes')); // Phase 4: DSA Tracker
-app.use('/api/tasks',     require('./routes/taskRoutes'));      // Phase 5: Study Planner
-app.use('/api/notes',     require('./routes/noteRoutes'));      // Phase 6: AI Notes
-app.use('/api/ai',        require('./routes/aiRoutes'));        // Phase 6: AI Notes
-app.use('/api/resumes',   require('./routes/resumeRoutes'));    // Phase 7: Resume Analyzer
+app.use('/api/tasks', require('./routes/taskRoutes'));      // Phase 5: Study Planner
+app.use('/api/notes', require('./routes/noteRoutes'));      // Phase 6: AI Notes
+app.use('/api/ai', require('./routes/aiRoutes'));        // Phase 6: AI Notes
+app.use('/api/resumes', require('./routes/resumeRoutes'));    // Phase 7: Resume Analyzer
 app.use('/api/interviews', require('./routes/interviewRoutes')); // Phase 8: AI Mock Interview
-// app.use('/api/users',     require('./routes/userRoutes'));
-// app.use('/api/interview', require('./routes/interviewRoutes'));
+app.use('/api/ai-history', require('./routes/aiHistoryRoutes')); // AI History Storage
+app.use('/api/activities', require('./routes/activityRoutes')); // User Activity Timeline
+app.use('/api/analytics', require('./routes/analyticsRoutes')); // Realtime Analytics & Readiness Score
+app.use('/api/users', require('./routes/userRoutes')); // User Account & Data Export
+app.use('/api/notifications', require('./routes/notificationRoutes')); // Notifications Center
+app.use('/api/focus', require('./routes/focusRoutes')); // Today's Focus AI Recommendations
 
 // ── Health-Check Route ────────────────────────────────────────────────────────
 app.get('/', (req, res) => {

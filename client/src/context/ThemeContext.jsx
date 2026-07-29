@@ -1,40 +1,24 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext({
-  theme: 'dark',
-  toggleTheme: () => {},
+  theme: 'light',
 });
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    // Read from localStorage or default to 'dark'
-    return localStorage.getItem('hirenova-theme') || 'dark';
-  });
-
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'light') {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    } else {
-      root.classList.remove('light');
-      root.classList.add('dark');
-    }
-    localStorage.setItem('hirenova-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
+    root.classList.remove('dark');
+    root.classList.add('light');
+    localStorage.removeItem('theme');
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: 'light' }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  // Fallback in case used outside ThemeProvider
-  if (!ctx) return { theme: 'dark', toggleTheme: () => {} };
-  return ctx;
+  return useContext(ThemeContext);
 }

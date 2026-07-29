@@ -45,6 +45,11 @@ const interviewService = {
     const response = await api.get(`/interviews/${id}`);
     return response.data;
   },
+
+  deleteInterview: async (id) => {
+    const response = await api.delete(`/interviews/${id}`);
+    return response.data;
+  },
 };
 
 export default interviewService;

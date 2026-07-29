@@ -7,6 +7,7 @@ const {
   endAndEvaluate,
   getInterviews,
   getInterviewById,
+  deleteInterview,
 } = require('../controllers/interviewController');
 
 router.use(protect);
@@ -18,7 +19,8 @@ router.route('/start')
   .post(startInterview);
 
 router.route('/:id')
-  .get(getInterviewById);
+  .get(getInterviewById)
+  .delete(deleteInterview);
 
 router.route('/:id/message')
   .post(submitResponse);

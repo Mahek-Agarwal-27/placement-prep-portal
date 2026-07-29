@@ -57,6 +57,7 @@ const UserSchema = new mongoose.Schema(
 
     // ── Student Profile Details ───────────────────────────────────────────────
     profile: {
+      phone:          { type: String, default: '' },
       college:        { type: String, default: '' },
       branch:         { type: String, default: '' },
       graduationYear: { type: Number, default: null },
@@ -64,6 +65,28 @@ const UserSchema = new mongoose.Schema(
       bio:            { type: String, default: '' },
       linkedIn:       { type: String, default: '' },
       github:         { type: String, default: '' },
+    },
+
+    // ── Placement Goals ────────────────────────────────────────────────────────
+    placementGoal: {
+      targetRole:      { type: String, default: 'Software Developer' },
+      targetCompanies: { type: [String], default: ['Google', 'Amazon', 'Microsoft'] },
+      prepLevel:       { type: String, enum: ['Beginner', 'Intermediate', 'Advanced'], default: 'Intermediate' },
+    },
+
+    // ── Notification Preferences ──────────────────────────────────────────────
+    notifications: {
+      dsaReminders:       { type: Boolean, default: true },
+      weeklyReport:       { type: Boolean, default: true },
+      aiSuggestions:      { type: Boolean, default: true },
+      emailNotifications: { type: Boolean, default: false },
+    },
+
+    // ── Theme Preference ──────────────────────────────────────────────────────
+    themePreference: {
+      type: String,
+      enum: ['light', 'dark', 'system'],
+      default: 'light',
     },
 
     // ── Daily Streak Tracking ─────────────────────────────────────────────────
@@ -79,6 +102,20 @@ const UserSchema = new mongoose.Schema(
       totalTasksDone:  { type: Number, default: 0 },
       totalStudyHours: { type: Number, default: 0 },
     },
+
+    // ── Gamification / Achievements ───────────────────────────────────────────
+    achievements: [
+      {
+        title: { type: String, required: true },
+        icon: { type: String, required: true },
+        description: { type: String, required: true },
+        unlockedAt: { type: Date, default: Date.now }
+      }
+    ],
+
+    // ── Reset Password Token & Expiry ──────────────────────────────────────────
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
   },
   {
     timestamps: true, // Adds createdAt and updatedAt automatically
@@ -107,6 +144,25 @@ UserSchema.methods.generateToken = function () {
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
+};
+
+// ── Instance Method: Generate and Hash Reset Password Token ───────────────────
+UserSchema.methods.getResetPasswordToken = function () {
+  const crypto = require('crypto');
+
+  // Generate random 20-byte token
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  // Hash token using SHA-256 and set to resetPasswordToken field
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // Set expire time to 30 minutes
+  this.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
+
+  return resetToken; // Return raw unhashed token to send in email link
 };
 
 module.exports = mongoose.model('User', UserSchema);
