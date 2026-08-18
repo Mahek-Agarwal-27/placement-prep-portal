@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import interviewService from '../services/interviewService';
+import { useAuth } from '../context/AuthContext';
 import { 
   MessageSquare, 
   Plus, 
@@ -13,36 +15,104 @@ import {
   Lightbulb, 
   Loader2, 
   Check,
+  ChevronDown,
   Trash2
 } from 'lucide-react';
 
+// Predefined Topics Lists
+const TECHNICAL_TOPICS = [
+  'Data Structures & Algorithms (DSA)',
+  'Java',
+  'C++',
+  'Python',
+  'JavaScript',
+  'React.js',
+  'Node.js',
+  'MERN Stack',
+  'SQL',
+  'MySQL',
+  'Database Management Systems (DBMS)',
+  'Operating Systems (OS)',
+  'Computer Networks (CN)',
+  'Object-Oriented Programming (OOPs)',
+  'Machine Learning',
+  'Deep Learning',
+  'Artificial Intelligence',
+  'Data Science',
+  'Cloud Computing',
+  'DevOps',
+  'Cyber Security',
+  'Other (Custom Topic)'
+];
+
+const SYSTEM_DESIGN_TOPICS = [
+  'Scalable Web Applications',
+  'Distributed Systems',
+  'Database Design',
+  'API Design',
+  'Microservices Architecture',
+  'Cloud Architecture',
+  'Caching Strategies',
+  'Load Balancing',
+  'Real-time Systems',
+  'Notification Systems',
+  'E-commerce System Design',
+  'Social Media System Design',
+  'Other (Custom Topic)'
+];
+
 const InterviewPage = () => {
-  const [history, setHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  
-  // Setup State
   const [type, setType] = useState('Technical');
-  const [topic, setTopic] = useState('');
-  
-  // Active Session State
+  const [selectedTopic, setSelectedTopic] = useState('Data Structures & Algorithms (DSA)');
+  const [customTopic, setCustomTopic] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const handleTypeChange = (newType) => {
+    setType(newType);
+    if (newType === 'System Design') {
+      setSelectedTopic('Scalable Web Applications');
+    } else if (newType === 'Technical') {
+      setSelectedTopic('Data Structures & Algorithms (DSA)');
+    } else {
+      setSelectedTopic('');
+    }
+    setCustomTopic('');
+    setSearchQuery('');
+  };
+
+  const [inputMessage, setInputMessage] = useState('');
   const [activeSession, setActiveSession] = useState(null);
+  const [history, setHistory] = useState([]);
+  
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [loadingSession, setLoadingSession] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
-  const [inputMessage, setInputMessage] = useState('');
   const [error, setError] = useState('');
-  
+
   const chatEndRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchHistory = async () => {
-    setLoadingHistory(true);
     try {
       const res = await interviewService.getInterviews();
       if (res.success) {
-        setHistory(res.data);
+        setHistory(res.data || []);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to fetch interview history:', e);
     } finally {
       setLoadingHistory(false);
     }
@@ -56,80 +126,142 @@ const InterviewPage = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeSession?.messages, isSending]);
 
-  const handleStart = async () => {
-    if (!topic.trim()) {
-      setError('Please provide an interview topic (e.g. React, Java, DSA, HR).');
+  const filteredTopics = (
+    type === 'System Design' ? SYSTEM_DESIGN_TOPICS : TECHNICAL_TOPICS
+  ).filter(t => 
+    t.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleStartInterview = async () => {
+    let effectiveTopic = type === 'Behavioral' ? 'HR & Behavioral' : selectedTopic;
+    if (type !== 'Behavioral' && selectedTopic === 'Other (Custom Topic)') {
+      if (!customTopic || !customTopic.trim()) {
+        setError('Please enter your custom topic.');
+        return;
+      }
+      effectiveTopic = customTopic.trim();
+    }
+
+    if (type !== 'Behavioral' && !effectiveTopic) {
+      setError(`Please select a ${type === 'System Design' ? 'System Design Topic' : 'Focus Topic / Tech Stack'}.`);
       return;
     }
-    
+
     setIsStarting(true);
     setError('');
-    
     try {
-      const res = await interviewService.startInterview({ type, topic });
-      if (res.success) {
+      const res = await interviewService.startInterview({
+        type,
+        topic: effectiveTopic,
+      });
+      if (res.success && res.data) {
         setActiveSession(res.data);
         fetchHistory();
+      } else {
+        setError(res.message || 'Failed to start interview session.');
       }
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to initialize interview session.');
+      const serverErr = e.response?.data?.message || e.message || 'Failed to start interview session.';
+      setError(serverErr);
     } finally {
       setIsStarting(false);
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !activeSession) return;
+  const handleSendMessage = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    const textToSend = inputMessage;
+    if (!inputMessage.trim() || isSending || !activeSession || activeSession.status !== 'active') {
+      return;
+    }
+
+    const userMsg = inputMessage.trim();
     setInputMessage('');
     setIsSending(true);
     setError('');
-    
-    const updatedMessages = [...activeSession.messages, { role: 'user', content: textToSend }];
-    setActiveSession({ ...activeSession, messages: updatedMessages });
-    
+
+    // Optimistically push user message into active session
+    setActiveSession((prev) => {
+      if (!prev) return prev;
+      const currentMsgs = prev.messages || [];
+      return {
+        ...prev,
+        messages: [...currentMsgs, { role: 'user', content: userMsg, timestamp: new Date().toISOString() }]
+      };
+    });
+
     try {
-      const res = await interviewService.submitResponse(activeSession._id, textToSend);
-      if (res.success) {
+      const res = await interviewService.respondToInterview(activeSession._id, userMsg);
+      if (res && res.success && res.data) {
         setActiveSession(res.data);
+        // Silently sync history in background
+        interviewService.getInterviews().then(historyRes => {
+          if (historyRes && historyRes.success) setHistory(historyRes.data || []);
+        }).catch(() => {});
+      } else {
+        setError(res?.message || 'Failed to send message.');
       }
-    } catch (e) {
-      setError('Failed to send message. Please try again.');
+    } catch (err) {
+      console.error('Error sending response:', err);
+      const serverErr = err.response?.data?.message || err.message || 'Failed to send message.';
+      setError(serverErr);
     } finally {
       setIsSending(false);
     }
   };
 
   const handleEndInterview = async () => {
-    if (!activeSession) return;
-    if (!window.confirm('Finish the interview and request AI evaluation?')) return;
-    
+    if (!activeSession || isEnding) return;
+
+    const userAnswersCount = (activeSession.messages || []).filter(m => m.role === 'user').length;
+    const maxQuestions = activeSession.type === 'Behavioral' ? 8 : activeSession.type === 'System Design' ? 7 : 10;
+
+    if (activeSession.status === 'active' && userAnswersCount < maxQuestions) {
+      const confirmEnd = window.confirm(`You have answered ${userAnswersCount} out of ${maxQuestions} questions. Are you sure you want to finish?`);
+      if (!confirmEnd) return;
+    }
+
     setIsEnding(true);
     setError('');
-    
     try {
-      const res = await interviewService.endAndEvaluate(activeSession._id);
-      if (res.success) {
+      const res = await interviewService.endInterview(activeSession._id);
+      if (res.success && res.data) {
         setActiveSession(res.data);
         fetchHistory();
+      } else {
+        setError(res.message || 'Failed to grade the interview transcript.');
       }
     } catch (e) {
-      setError('Failed to grade the interview transcript.');
+      const serverErr = e.response?.data?.message || e.message || 'Failed to grade the interview transcript.';
+      setError(serverErr);
     } finally {
       setIsEnding(false);
     }
   };
 
   const handleSelectPastSession = async (session) => {
+    if (!session || !session._id) return;
     setError('');
+    setActiveSession(session);
+    setLoadingSession(true);
     try {
       const res = await interviewService.getInterviewById(session._id);
-      if (res.success) {
+      if (res.success && res.data) {
         setActiveSession(res.data);
+      } else {
+        setError('Interview session not found.');
       }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to fetch session detail:', e);
+      // Keep optimistic session or set notice if missing
+      if (!session.messages) {
+        setError('Interview session not found.');
+      }
+    } finally {
+      setLoadingSession(false);
     }
   };
 
@@ -148,8 +280,10 @@ const InterviewPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col h-screen overflow-hidden">
-      <Navbar />
+    <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased h-screen overflow-hidden">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar />
 
       <main className="flex-1 flex overflow-hidden">
         
@@ -157,7 +291,7 @@ const InterviewPage = () => {
         <aside className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
           <div className="p-4 border-b border-slate-200">
             <button 
-              onClick={() => setActiveSession(null)} 
+              onClick={() => { setActiveSession(null); setError(''); }} 
               className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5"
             >
               <Plus className="w-4 h-4" /> Start New Interview
@@ -167,7 +301,9 @@ const InterviewPage = () => {
           <div className="p-4 flex-1">
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Past Interviews</h3>
             {loadingHistory ? (
-              <div className="text-center py-6 text-xs text-slate-400">Loading history...</div>
+              <div className="flex items-center justify-center py-8 text-xs text-slate-400 gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" /> Loading history...
+              </div>
             ) : history.length === 0 ? (
               <div className="text-center py-6 text-xs text-slate-400">No previous sessions.</div>
             ) : (
@@ -188,7 +324,7 @@ const InterviewPage = () => {
                       <div className="flex items-center gap-1.5">
                         {item.status === 'completed' ? (
                           <span className="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
-                            {item.feedback?.score}%
+                            {item.feedback?.score !== null && item.feedback?.score !== undefined ? `${item.feedback.score}%` : 'N/A'}
                           </span>
                         ) : (
                           <span className="text-[10px] bg-amber-50 text-amber-700 font-semibold px-1.5 py-0.5 rounded border border-amber-200">
@@ -221,12 +357,20 @@ const InterviewPage = () => {
         <section className="flex-1 flex flex-col bg-slate-50 overflow-hidden relative">
           
           {error && (
-            <div className="p-3 mx-6 mt-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center shrink-0 z-10">
-              {error}
+            <div className="p-3 mx-6 mt-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center shrink-0 z-10 flex items-center justify-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          {!activeSession ? (
+          {loadingSession ? (
+            <div className="flex-1 flex items-center justify-center bg-white">
+              <div className="flex flex-col items-center gap-3 text-slate-500 text-xs font-medium">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                <span>Loading interview session...</span>
+              </div>
+            </div>
+          ) : !activeSession ? (
             /* Setup Screen */
             <div className="max-w-md mx-auto my-auto p-6 space-y-6 animate-fade-in w-full bg-white border border-slate-200 rounded-2xl shadow-sm">
               <div className="text-center space-y-1.5">
@@ -242,7 +386,7 @@ const InterviewPage = () => {
                   <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Interview Type</label>
                   <select 
                     value={type} 
-                    onChange={(e) => setType(e.target.value)}
+                    onChange={(e) => handleTypeChange(e.target.value)}
                     className="input-field py-2 text-xs"
                   >
                     <option value="Technical">Technical Round</option>
@@ -251,24 +395,92 @@ const InterviewPage = () => {
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Focus Topic / Tech Stack</label>
-                  <input 
-                    type="text" 
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g. React & Node.js, Java DSA, System Design, HR"
-                    className="input-field py-2 text-xs"
-                  />
-                </div>
+                {type !== 'Behavioral' ? (
+                  <div className="space-y-1.5" ref={dropdownRef}>
+                    <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                      {type === 'System Design' ? 'System Design Topic' : 'Focus Area / Tech Stack'} <span className="text-rose-500">*</span>
+                    </label>
+
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                        className="input-field py-2 text-xs w-full text-left flex justify-between items-center bg-white border border-slate-200 rounded-xl"
+                      >
+                        <span className={selectedTopic ? 'text-slate-900 font-medium' : 'text-slate-400'}>
+                          {selectedTopic || (type === 'System Design' ? 'Select System Design Topic...' : 'Select Focus Area / Tech Stack...')}
+                        </span>
+                        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                      </button>
+
+                      {dropdownOpen && (
+                        <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-hidden flex flex-col">
+                          <div className="p-2 border-b border-slate-100 bg-slate-50">
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder="Search topic..."
+                              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500"
+                              autoFocus
+                            />
+                          </div>
+
+                          <div className="overflow-y-auto max-h-48 divide-y divide-slate-50">
+                            {filteredTopics.length > 0 ? (
+                              filteredTopics.map((t) => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTopic(t);
+                                    setDropdownOpen(false);
+                                    setSearchQuery('');
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 transition-colors flex items-center justify-between ${
+                                    selectedTopic === t ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-700'
+                                  }`}
+                                >
+                                  <span>{t}</span>
+                                  {selectedTopic === t && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-3 py-2 text-xs text-slate-400 text-center">No matching topics found</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedTopic === 'Other (Custom Topic)' && (
+                      <div className="pt-2">
+                        <label className="text-[11px] font-semibold text-slate-600 mb-1 block">Enter Custom Topic *</label>
+                        <input
+                          type="text"
+                          value={customTopic}
+                          onChange={(e) => setCustomTopic(e.target.value)}
+                          placeholder="e.g. Flutter, Go, Rust, SAP, Salesforce, Unity"
+                          className="input-field py-2 text-xs"
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleStartInterview(); }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-xs text-blue-700">
+                    <span className="font-semibold block mb-0.5">Behavioral / HR Round Selected</span>
+                    <span>The focus topic is automatically configured to evaluate soft skills, leadership, and HR scenarios.</span>
+                  </div>
+                )}
 
                 <button 
-                  onClick={handleStart}
+                  onClick={handleStartInterview}
                   disabled={isStarting}
                   className="btn-primary w-full py-2.5 text-xs font-semibold"
                 >
                   {isStarting ? (
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center justify-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" /> Starting Session...
                     </span>
                   ) : 'Start Interview Round'}
@@ -287,12 +499,19 @@ const InterviewPage = () => {
                   </div>
                   <div>
                     <h2 className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                      Mock Interview: {activeSession.topic}
+                      Mock Interview: {activeSession.topic || 'General Technical'}
                       {activeSession.status === 'active' && (
                         <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                       )}
                     </h2>
-                    <p className="text-[11px] text-slate-400">{activeSession.type} Round • AI Corporate Recruiter</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[11px] text-slate-400">{activeSession.type} Round • AI Corporate Recruiter</p>
+                      {activeSession.status === 'active' && (
+                        <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-100">
+                          Question {Math.min((activeSession.messages || []).filter(m => m.role === 'assistant').length, activeSession.type === 'Behavioral' ? 8 : activeSession.type === 'System Design' ? 7 : 10)} / {activeSession.type === 'Behavioral' ? 8 : activeSession.type === 'System Design' ? 7 : 10}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -302,14 +521,18 @@ const InterviewPage = () => {
                     disabled={isEnding}
                     className="btn-secondary text-xs py-1.5 px-3 border-slate-200 hover:border-slate-300"
                   >
-                    {isEnding ? 'Evaluating...' : 'Finish & Grade'}
+                    {isEnding ? (
+                      <span className="flex items-center gap-1.5">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" /> Analyzing your performance...
+                      </span>
+                    ) : 'Finish & Grade'}
                   </button>
                 )}
               </div>
 
               {/* Chat Message Transcript */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
-                {activeSession.messages.map((msg, idx) => (
+                {(activeSession?.messages || []).map((msg, idx) => (
                   <div 
                     key={idx} 
                     className={`flex items-start gap-3 ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} animate-fade-in`}
@@ -344,10 +567,9 @@ const InterviewPage = () => {
                     <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
                       <Bot className="w-4 h-4" />
                     </div>
-                    <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3 shadow-sm flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></span>
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                    <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3 shadow-sm flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      <span className="text-xs text-slate-600 font-medium italic">Generating next question...</span>
                     </div>
                   </div>
                 )}
@@ -361,7 +583,7 @@ const InterviewPage = () => {
                         <h3 className="font-bold text-slate-900 text-sm">Evaluation Report</h3>
                       </div>
                       <span className="text-sm font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
-                        {activeSession.feedback.score}/100
+                        {activeSession.feedback.score === 0 ? '0/100 (N/A)' : `${activeSession.feedback.score}/100`}
                       </span>
                     </div>
 
@@ -378,7 +600,7 @@ const InterviewPage = () => {
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Key Strengths
                         </p>
                         <ul className="space-y-1 text-slate-600">
-                          {activeSession.feedback.strengths?.map((s, i) => (
+                          {(activeSession.feedback.strengths || []).map((s, i) => (
                             <li key={i}>• {s}</li>
                           ))}
                         </ul>
@@ -389,12 +611,44 @@ const InterviewPage = () => {
                           <AlertTriangle className="w-4 h-4 text-amber-600" /> Areas for Improvement
                         </p>
                         <ul className="space-y-1 text-slate-600">
-                          {activeSession.feedback.weaknesses?.map((w, i) => (
+                          {(activeSession.feedback.weaknesses || []).map((w, i) => (
                             <li key={i}>• {w}</li>
                           ))}
                         </ul>
                       </div>
                     </div>
+
+                    {(activeSession.feedback.topicsToImprove?.length > 0 || activeSession.feedback.recommendedPracticeQuestions?.length > 0) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-3 border-t border-slate-100">
+                        {activeSession.feedback.topicsToImprove?.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="font-semibold text-blue-700 flex items-center gap-1.5">
+                              <Lightbulb className="w-4 h-4 text-blue-600" /> Topics to Focus On
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {activeSession.feedback.topicsToImprove.map((t, idx) => (
+                                <span key={idx} className="bg-blue-50 text-blue-700 font-medium px-2 py-0.5 rounded text-[11px] border border-blue-100">
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {activeSession.feedback.recommendedPracticeQuestions?.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="font-semibold text-purple-700 flex items-center gap-1.5">
+                              <MessageSquare className="w-4 h-4 text-purple-600" /> Recommended Practice
+                            </p>
+                            <ul className="space-y-1 text-slate-600">
+                              {activeSession.feedback.recommendedPracticeQuestions.map((q, idx) => (
+                                <li key={idx}>• {q}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -403,33 +657,58 @@ const InterviewPage = () => {
 
               {/* Chat Input Bar */}
               {activeSession.status === 'active' && (
-                <div className="p-4 border-t border-slate-200 bg-white shrink-0">
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSendMessage(e);
+                  }} 
+                  className="p-4 border-t border-slate-200 bg-white shrink-0"
+                >
                   <div className="flex gap-2 max-w-4xl mx-auto">
                     <input 
                       type="text" 
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Type your response here..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSendMessage(e);
+                        }
+                      }}
+                      placeholder="Type your response here... (Press Enter to send)"
                       className="input-field text-xs py-2.5"
                       disabled={isSending}
                     />
                     <button 
-                      onClick={handleSendMessage}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSendMessage(e);
+                      }}
                       disabled={isSending || !inputMessage.trim()}
-                      className="btn-primary px-4 py-2 text-xs shrink-0"
+                      className="btn-primary px-4 py-2 text-xs shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <Send className="w-4 h-4" />
+                      {isSending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <span>Send</span>
+                          <Send className="w-3.5 h-3.5" />
+                        </>
+                      )}
                     </button>
                   </div>
-                </div>
+                </form>
               )}
-
             </div>
           )}
 
         </section>
       </main>
+      </div>
     </div>
   );
 };

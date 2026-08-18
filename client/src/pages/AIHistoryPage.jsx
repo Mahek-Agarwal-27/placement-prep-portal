@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import AIHistoryCard from '../components/AIHistoryCard';
 import { HistorySkeleton } from '../components/SkeletonLoader';
 import aiHistoryService from '../services/aiHistoryService';
@@ -59,9 +60,9 @@ const AIHistoryPage = () => {
   };
 
   const handleClearAll = async () => {
-    if (!window.confirm('Clear ALL AI History records? This action cannot be undone.')) return;
+    if (!window.confirm('Are you sure you want to delete ALL AI history entries?')) return;
     try {
-      await aiHistoryService.clearAll();
+      await aiHistoryService.clearHistory();
       fetchHistory();
     } catch (err) {
       console.error(err);
@@ -90,31 +91,33 @@ const AIHistoryPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
+    <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 md:p-8 space-y-8">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-purple-600" /> AI History Dashboard ⭐
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Filter, search, sort, and review all your generated AI notes, roadmaps, and chat interactions.
-            </p>
+        <main className="flex-1 max-w-[1500px] mx-auto w-full p-8 space-y-8">
+          
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-6">
+            <div>
+              <h1 className="text-2xl font-black text-[#1A1A2E] tracking-tight flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-[#6C47FF]" /> AI History Dashboard ⭐
+              </h1>
+              <p className="text-sm text-gray-500 font-medium mt-1">
+                Filter, search, sort, and review all your generated AI notes, roadmaps, and chat interactions.
+              </p>
+            </div>
+
+            {history.length > 0 && (
+              <button 
+                onClick={handleClearAll}
+                className="px-4 py-2 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-100 transition-all flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" /> Clear All History
+              </button>
+            )}
           </div>
-
-          {history.length > 0 && (
-            <button 
-              onClick={handleClearAll}
-              className="btn-secondary text-xs text-rose-600 hover:bg-rose-50 border-rose-200"
-            >
-              <Trash2 className="w-4 h-4" /> Clear All History
-            </button>
-          )}
-        </div>
 
         {error && (
           <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
@@ -181,6 +184,17 @@ const AIHistoryPage = () => {
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5" /> AI Chat ({history.filter(h => h.category === 'chat').length})
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('interview'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-all ${
+                activeTab === 'interview'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Mock Interviews ({history.filter(h => h.category === 'interview').length})
             </button>
           </div>
 
@@ -286,6 +300,7 @@ const AIHistoryPage = () => {
         )}
 
       </main>
+      </div>
     </div>
   );
 };

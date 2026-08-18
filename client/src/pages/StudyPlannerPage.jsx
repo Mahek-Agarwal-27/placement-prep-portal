@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import taskService from '../services/taskService';
 import { 
   Calendar, 
@@ -65,108 +66,111 @@ const TaskModal = ({ isOpen, onClose, onSave, initial }) => {
     setSaving(true);
     setError('');
     try {
-      const payload = {
-        ...form,
-        estimatedHours: form.estimatedHours ? parseFloat(form.estimatedHours) : 1,
-        dueDate: form.dueDate || null,
-      };
-      await onSave(payload);
+      await onSave(form);
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to save.');
+      setError(err.message || 'Failed to save. Try again.');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
-        <div className="p-6 space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-            <h3 className="text-base font-semibold text-slate-900">
-              {initial ? 'Edit Study Task' : 'Add Study Task'}
-            </h3>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-              <X className="w-5 h-5" />
-            </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+      <div className="bg-white border border-purple-100 rounded-3xl max-w-md w-full p-6 shadow-xl space-y-4 animate-fade-in">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-[#6C47FF]" />
+            {initial ? 'Edit Study Task' : 'New Study Task'}
+          </h2>
+          <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
+        )}
 
-          {error && (
-            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">Task Title *</label>
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="block text-slate-700 font-semibold mb-1 uppercase tracking-wider">Title *</label>
             <input 
-              className="input-field text-xs" 
-              placeholder="e.g. Solve 5 Graph DP Problems, Review System Design Notes" 
+              type="text" 
+              className="input-field" 
+              placeholder="e.g. Solve 5 Dynamic Programming Problems" 
               value={form.title} 
               onChange={set('title')} 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Category</label>
-              <select className="input-field text-xs" value={form.category} onChange={set('category')}>
-                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Priority</label>
-              <select className="input-field text-xs" value={form.priority} onChange={set('priority')}>
-                {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Status</label>
-              <select className="input-field text-xs" value={form.status} onChange={set('status')}>
-                {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Est. Hours</label>
-              <input 
-                type="number" 
-                className="input-field text-xs" 
-                placeholder="1" 
-                value={form.estimatedHours} 
-                onChange={set('estimatedHours')} 
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Due Date</label>
-              <input 
-                type="date" 
-                className="input-field text-xs" 
-                value={form.dueDate} 
-                onChange={set('dueDate')} 
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">Description (optional)</label>
+          <div>
+            <label className="block text-slate-700 font-semibold mb-1 uppercase tracking-wider">Description</label>
             <textarea 
-              className="input-field text-xs resize-y min-h-[70px] py-2" 
-              placeholder="Task details or specific goals..." 
+              className="input-field min-h-[70px] resize-none" 
+              placeholder="Task details, links or target subtopics..." 
               value={form.description} 
               onChange={set('description')} 
             />
           </div>
 
-          <div className="flex gap-3 pt-3 border-t border-slate-100">
-            <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">
-              {saving ? 'Saving...' : (initial ? 'Save Task' : 'Add Task')}
-            </button>
-            <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1 uppercase tracking-wider">Category</label>
+              <select className="input-field" value={form.category} onChange={set('category')}>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1 uppercase tracking-wider">Priority</label>
+              <select className="input-field" value={form.priority} onChange={set('priority')}>
+                {PRIORITIES.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+              </select>
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1 uppercase tracking-wider">Status</label>
+              <select className="input-field" value={form.status} onChange={set('status')}>
+                {STATUSES.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1 uppercase tracking-wider">Est. Hours</label>
+              <input 
+                type="number" 
+                min="0.5" 
+                step="0.5" 
+                className="input-field" 
+                placeholder="2.5" 
+                value={form.estimatedHours} 
+                onChange={set('estimatedHours')} 
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-700 font-semibold mb-1 uppercase tracking-wider">Target Due Date</label>
+            <input 
+              type="date" 
+              className="input-field" 
+              value={form.dueDate} 
+              onChange={set('dueDate')} 
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button onClick={onClose} className="btn-secondary text-xs py-2 px-4">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary text-xs py-2 px-4">
+            {saving ? 'Saving...' : initial ? 'Update Task' : 'Save Task'}
+          </button>
         </div>
       </div>
     </div>
@@ -222,7 +226,7 @@ const StudyPlannerPage = () => {
     if (editTarget) {
       await taskService.updateTask(editTarget._id, formData);
     } else {
-      await taskService.createTask(formData);
+      await taskService.addTask(formData);
     }
     fetchTasks();
     fetchStats();
@@ -249,10 +253,12 @@ const StudyPlannerPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
+    <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 md:p-8 space-y-8">
+        <main className="flex-1 max-w-[1500px] mx-auto w-full p-8 space-y-8">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
@@ -434,6 +440,7 @@ const StudyPlannerPage = () => {
         onSave={handleSave} 
         initial={editTarget} 
       />
+      </div>
     </div>
   );
 };

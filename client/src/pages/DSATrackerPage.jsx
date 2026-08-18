@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import questionService from '../services/questionService';
 import { 
   Code2, 
@@ -258,29 +259,31 @@ const DSATrackerPage = () => {
   (stats?.byDifficulty || []).forEach(d => { byDiff[d._id] = d; });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
+    <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 md:p-8 space-y-8">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Code2 className="w-6 h-6 text-blue-600" /> DSA Learning Tracker
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Log solved problems, track topic completion rates, and maintain consistency.
-            </p>
+        <main className="flex-1 max-w-[1500px] mx-auto w-full p-8 space-y-8">
+          
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-6">
+            <div>
+              <h1 className="text-2xl font-black text-[#1A1A2E] tracking-tight flex items-center gap-2">
+                <Code2 className="w-6 h-6 text-[#6C47FF]" /> DSA Learning Tracker
+              </h1>
+              <p className="text-sm text-gray-500 font-medium mt-1">
+                Log solved problems, track topic completion rates, and maintain consistency.
+              </p>
+            </div>
+
+            <button 
+              onClick={() => { setEditTarget(null); setModalOpen(true); }}
+              className="px-6 py-3 rounded-2xl bg-[#6C47FF] text-white font-bold text-sm hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Log Problem
+            </button>
           </div>
-
-          <button 
-            onClick={() => { setEditTarget(null); setModalOpen(true); }}
-            className="btn-primary"
-          >
-            <Plus className="w-4 h-4" /> Log Problem
-          </button>
-        </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -505,6 +508,7 @@ const DSATrackerPage = () => {
         onSave={handleSave} 
         initial={editTarget} 
       />
+      </div>
     </div>
   );
 };

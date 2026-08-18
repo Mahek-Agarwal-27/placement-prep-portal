@@ -165,4 +165,49 @@ UserSchema.methods.getResetPasswordToken = function () {
   return resetToken; // Return raw unhashed token to send in email link
 };
 
+// ── Instance Method: Update Daily Streak on Valid Learning Activity ───────────
+UserSchema.methods.updateStreak = async function () {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+
+  if (!this.streak) {
+    this.streak = { currentStreak: 1, longestStreak: 1, lastActiveDate: now };
+    await this.save();
+    return this.streak;
+  }
+
+  if (!this.streak.lastActiveDate) {
+    this.streak.currentStreak = 1;
+    this.streak.longestStreak = Math.max(1, this.streak.longestStreak || 1);
+    this.streak.lastActiveDate = now;
+    await this.save();
+    return this.streak;
+  }
+
+  const lastActiveStr = new Date(this.streak.lastActiveDate).toISOString().split('T')[0];
+
+  if (todayStr === lastActiveStr) {
+    // Same day activity — streak already credited for today
+    return this.streak;
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+  if (lastActiveStr === yesterdayStr) {
+    // Consecutive day activity — increment streak
+    this.streak.currentStreak = (this.streak.currentStreak || 0) + 1;
+    this.streak.longestStreak = Math.max(this.streak.longestStreak || 0, this.streak.currentStreak);
+  } else {
+    // Missed one or more days — reset streak to 1 upon completing today's new activity
+    this.streak.currentStreak = 1;
+    this.streak.longestStreak = Math.max(this.streak.longestStreak || 1, 1);
+  }
+
+  this.streak.lastActiveDate = now;
+  await this.save();
+  return this.streak;
+};
+
 module.exports = mongoose.model('User', UserSchema);

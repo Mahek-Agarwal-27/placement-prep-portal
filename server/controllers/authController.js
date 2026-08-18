@@ -127,9 +127,10 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
     return res.status(404).json(errorResponse('User not found'));
   }
 
-  const { name, college, branch, graduationYear, skills, bio, linkedIn, github } = req.body;
+  const { name, avatar, college, branch, graduationYear, skills, bio, linkedIn, github } = req.body;
 
   if (name !== undefined) user.name = name;
+  if (avatar !== undefined) user.avatar = avatar;
 
   if (user.profile) {
     if (college !== undefined) user.profile.college = college;

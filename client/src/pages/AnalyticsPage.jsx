@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import {
   ResponsiveContainer,
   PieChart,
@@ -46,14 +47,16 @@ const AnalyticsPage = () => {
         ]);
         
         // 1. Process DSA Stats
-        if (qRes.success && qRes.data?.byDifficulty) {
-          let total = 0;
-          const formattedDsa = qRes.data.byDifficulty.map((d) => {
-            total += d.count;
-            return { name: d._id, value: d.count };
-          });
-          setDsaStats(formattedDsa);
-          setDsaTotal(total);
+        if (qRes.success && qRes.data) {
+          const { byDifficulty, byTopic, totalSolved } = qRes.data;
+          if (Array.isArray(byDifficulty)) {
+            const formattedDsa = byDifficulty.map((d) => ({
+              name: d._id || 'Unknown',
+              value: d.solved ?? d.count ?? 0,
+            })).filter(item => item.value > 0);
+            setDsaStats(formattedDsa);
+          }
+          setDsaTotal(totalSolved ?? 0);
         }
 
         // 2. Process Study Planner Stats
@@ -61,32 +64,31 @@ const AnalyticsPage = () => {
           setTaskStats(tRes.data);
         }
 
-        // 3. Process Resumes
-        if (rRes.success && rRes.data) {
-          const formattedResumes = rRes.data
-            .map((r) => ({
-              name: new Date(r.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-              score: r.atsScore,
-            }))
-            .reverse();
-          setResumeData(formattedResumes);
+        // 3. Process Resume Scores Over Time
+        if (rRes.success && Array.isArray(rRes.data)) {
+          const formattedResume = rRes.data.reverse().map((r, i) => ({
+            name: `Scan ${i + 1}`,
+            score: r.atsScore || 0,
+          }));
+          setResumeData(formattedResume);
         }
 
-        // 4. Process Interviews
-        if (iRes.success && iRes.data) {
-          const completedInterviews = iRes.data
-            .filter((i) => i.status === 'completed')
-            .map((i) => ({
-              topic: i.topic,
-              score: i.feedback?.score || 0,
-            }))
+        // 4. Process Mock Interview Scores
+        if (iRes.success && Array.isArray(iRes.data)) {
+          const formattedInterview = iRes.data
+            .map((item, idx) => {
+              const scoreVal = item.feedback?.score ?? item.score;
+              return {
+                name: `Session ${idx + 1}`,
+                score: scoreVal !== undefined && scoreVal !== null ? Number(scoreVal) : null,
+              };
+            })
+            .filter(item => item.score !== null && !isNaN(item.score))
             .reverse();
-          setInterviewData(completedInterviews);
+          setInterviewData(formattedInterview);
         }
-
-      } catch (e) {
-        console.error(e);
-        setError('Failed to fetch analytics data.');
+      } catch (err) {
+        setError('Failed to load analytics.');
       } finally {
         setLoading(false);
       }
@@ -99,10 +101,12 @@ const AnalyticsPage = () => {
   const highestInterviewScore = interviewData.length > 0 ? Math.max(...interviewData.map(i => i.score)) : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
+    <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <Navbar />
 
-      <main className="max-w-7xl mx-auto w-full p-6 md:p-8 space-y-8 flex-1">
+        <main className="max-w-[1500px] mx-auto w-full p-8 space-y-8 flex-1">
         
         {/* Header */}
         <div className="border-b border-slate-200 pb-6">
@@ -140,7 +144,7 @@ const AnalyticsPage = () => {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Study Tasks Done</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-1">{taskStats?.completedTasks ?? 0}</h3>
+                <h3 className="text-2xl font-bold text-slate-900 mt-1">{taskStats?.totalCompleted ?? 0}</h3>
               </div>
               <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
                 <CheckCircle2 className="w-5 h-5" />
@@ -254,6 +258,7 @@ const AnalyticsPage = () => {
         </div>
 
       </main>
+      </div>
     </div>
   );
 };

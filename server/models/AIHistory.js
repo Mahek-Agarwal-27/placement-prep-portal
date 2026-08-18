@@ -9,7 +9,7 @@ const AIHistorySchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['note', 'roadmap', 'chat', 'resume'],
+      enum: ['note', 'roadmap', 'chat', 'resume', 'interview'],
       required: true,
     },
     title: {

@@ -35,9 +35,7 @@ api.interceptors.request.use(
 );
 
 // ── Response Interceptor ──────────────────────────────────────────────────────
-// Handle 401 globally: clear storage and redirect to login
-// BUT skip redirect for auth endpoints (login/signup) — those 401s are just
-// "wrong credentials" and should be handled by the form's own catch block.
+// Handle 401 gracefully: clear storage if needed, but avoid hard window.location reloads
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -46,9 +44,10 @@ api.interceptors.response.use(
       requestUrl.includes('/auth/login') || requestUrl.includes('/auth/signup');
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
+      console.warn('Unauthorized request (401). Token may be missing or expired.');
+      // Remove invalid tokens without triggering a full page refresh
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

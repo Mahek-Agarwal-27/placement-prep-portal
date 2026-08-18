@@ -30,10 +30,22 @@ const taskService = {
   },
 
   /**
-   * Add a new study task
-   * @param {Object} taskData - { title, description, category, priority, status, dueDate, estimatedHours }
+   * Get single nearest upcoming study session
+   */
+  getUpcomingSession: async () => {
+    const response = await api.get('/tasks/upcoming');
+    return response.data;
+  },
+
+  /**
+   * Add a new study task (createTask alias)
    */
   addTask: async (taskData) => {
+    const response = await api.post('/tasks', taskData);
+    return response.data;
+  },
+
+  createTask: async (taskData) => {
     const response = await api.post('/tasks', taskData);
     return response.data;
   },

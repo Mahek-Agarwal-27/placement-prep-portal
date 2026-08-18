@@ -20,11 +20,21 @@ const interviewService = {
     return response.data;
   },
 
+  respondToInterview: async (id, message) => {
+    const response = await api.post(`/interviews/${id}/message`, { message });
+    return response.data;
+  },
+
   /**
    * End session and evaluate transcript via Gemini
    * @param {string} id - Interview ID
    */
   endAndEvaluate: async (id) => {
+    const response = await api.post(`/interviews/${id}/end`);
+    return response.data;
+  },
+
+  endInterview: async (id) => {
     const response = await api.post(`/interviews/${id}/end`);
     return response.data;
   },

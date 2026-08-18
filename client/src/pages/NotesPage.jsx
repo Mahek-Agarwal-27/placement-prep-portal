@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import noteService from '../services/noteService';
 import aiService from '../services/aiService';
 import { 
@@ -12,7 +14,13 @@ import {
   Check, 
   X, 
   Loader2, 
-  Save 
+  Save,
+  Send,
+  HelpCircle,
+  BookOpen,
+  Target,
+  FileCode,
+  RefreshCw
 } from 'lucide-react';
 
 const FOLDERS = ['General', 'DSA Roadmaps', 'System Design', 'HR Questions', 'Resume Notes'];
@@ -35,14 +43,15 @@ const NotesPage = () => {
   const [search, setSearch] = useState('');
   const [filterFolder, setFilterFolder] = useState('');
 
-  // AI Modal state
+  // AI Modal state & chat context
   const [showAiModal, setShowAiModal] = useState(false);
-  const [aiAction, setAiAction] = useState('summarize');
+  const [customPrompt, setCustomPrompt] = useState('');
   const [aiResult, setAiResult] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
 
-  const fetchNotes = useCallback(async () => {
-    setLoading(true);
+  const fetchNotes = useCallback(async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const params = {};
       if (search) params.search = search;
@@ -55,64 +64,69 @@ const NotesPage = () => {
     } catch (e) {
       setError('Failed to load notes.');
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   }, [search, filterFolder]);
 
   useEffect(() => {
-    fetchNotes();
+    fetchNotes(true);
   }, [fetchNotes]);
 
-  useEffect(() => {
-    if (activeNote) {
-      setTitle(activeNote.title);
-      setContent(activeNote.content);
-      setFolder(activeNote.folder);
-      setTags(activeNote.tags ? activeNote.tags.join(', ') : '');
-    } else {
-      setTitle('');
-      setContent('');
-      setFolder('General');
-      setTags('');
-    }
-  }, [activeNote]);
+  const handleSelectNote = (note) => {
+    setActiveNote(note);
+    setTitle(note.title);
+    setContent(note.content);
+    setFolder(note.folder || 'General');
+    setTags(note.tags ? note.tags.join(', ') : '');
+  };
 
-  const handleSaveNote = async () => {
+  const handleCreateNew = () => {
+    setActiveNote(null);
+    setTitle('');
+    setContent('');
+    setFolder('General');
+    setTags('');
+  };
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault();
+    if (!title.trim()) return;
+
     setIsSaving(true);
-    try {
-      const payload = {
-        title: title || 'Untitled Note',
-        content,
-        folder: folder || 'General',
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-      };
+    const parsedTags = tags.split(',').map(t => t.trim()).filter(Boolean);
+    const payload = { title, content, folder, tags: parsedTags };
 
+    try {
       if (activeNote) {
         const res = await noteService.updateNote(activeNote._id, payload);
         if (res.success) {
           setActiveNote(res.data);
-          fetchNotes();
+          // Instant optimistic update in note list
+          setNotes(prev => prev.map(n => n._id === res.data._id ? res.data : n));
         }
       } else {
         const res = await noteService.createNote(payload);
         if (res.success) {
           setActiveNote(res.data);
-          fetchNotes();
+          // Instant optimistic insert at top of list
+          setNotes(prev => [res.data, ...prev]);
         }
       }
+      fetchNotes(false);
     } catch (e) {
-      console.error(e);
+      setError('Failed to save note.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDeleteNote = async (id) => {
+  const handleDelete = async (id, e) => {
+    if (e) e.stopPropagation();
     if (!window.confirm('Delete this note?')) return;
     try {
       await noteService.deleteNote(id);
-      if (activeNote && activeNote._id === id) {
-        setActiveNote(null);
+      if (activeNote?._id === id) {
+        handleCreateNew();
       }
       fetchNotes();
     } catch (e) {
@@ -120,24 +134,54 @@ const NotesPage = () => {
     }
   };
 
-  const handleAIAction = async () => {
+  const handleAIAction = async (actionType = null, overridePrompt = null) => {
+    const userTypedPrompt = overridePrompt || customPrompt.trim();
     const contextText = content.trim();
-    if (!contextText) {
-      setAiResult('Please write some content in the note before using AI generation.');
+    const activeTitle = title.trim();
+
+    // Find the last real user prompt topic from history if user didn't type a new prompt
+    let lastTopicFromHistory = '';
+    for (let i = chatHistory.length - 1; i >= 0; i--) {
+      const item = chatHistory[i];
+      if (item.role === 'user' && item.text && !['explain', 'roadmap', 'interview_questions', 'revision', 'summarize'].includes(item.text.toLowerCase())) {
+        lastTopicFromHistory = item.text;
+        break;
+      }
+    }
+
+    const effectivePrompt = userTypedPrompt || lastTopicFromHistory || activeTitle;
+
+    if (!effectivePrompt && !contextText && !actionType) {
+      setAiResult('Please enter a topic/question or select an AI action.');
       return;
     }
 
     setIsGenerating(true);
-    setAiResult('');
+    const newPromptLabel = userTypedPrompt || (actionType ? `${actionType} on ${effectivePrompt || 'Note'}` : 'AI Study Assistance');
     
+    // Add user message to local session history
+    const updatedHistory = [
+      ...chatHistory,
+      { role: 'user', text: newPromptLabel }
+    ];
+    setChatHistory(updatedHistory);
+
     try {
       const res = await aiService.generateAIResponse({
-        action: aiAction,
+        prompt: effectivePrompt,
+        action: actionType,
         context: contextText,
+        history: chatHistory
       });
 
-      if (res.success) {
-        setAiResult(res.data.text);
+      if (res && res.success && res.data.text) {
+        const aiText = res.data.text;
+        setAiResult(aiText);
+        setChatHistory([
+          ...updatedHistory,
+          { role: 'assistant', text: aiText }
+        ]);
+        setCustomPrompt('');
       }
     } catch (e) {
       const serverMsg = e.response?.data?.message || e.message || 'AI service unavailable. Please try again.';
@@ -149,181 +193,280 @@ const NotesPage = () => {
 
   const applyAiResultToNote = () => {
     if (!aiResult) return;
-    setContent(prev => (prev ? `${prev}\n\n--- AI Output ---\n${aiResult}` : aiResult));
+    setContent(prev => (prev ? `${prev}\n\n--- AI Study Note ---\n${aiResult}` : aiResult));
     setShowAiModal(false);
-    setAiResult('');
+  };
+
+  const saveAiResultAsNewNote = async () => {
+    if (!aiResult) return;
+    const generatedTitle = customPrompt.trim() 
+      ? `AI Note: ${customPrompt.trim().substring(0, 30)}`
+      : 'AI Generated Study Note';
+
+    try {
+      const res = await noteService.createNote({
+        title: generatedTitle,
+        content: aiResult,
+        folder: 'General',
+        tags: ['AI-Note']
+      });
+      if (res.success) {
+        setActiveNote(res.data);
+        setTitle(res.data.title);
+        setContent(res.data.content);
+        setFolder(res.data.folder || 'General');
+        fetchNotes();
+        setShowAiModal(false);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col h-screen overflow-hidden">
-      <Navbar />
+    <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased h-screen overflow-hidden">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar />
 
-      <main className="flex-1 flex overflow-hidden">
-        
-        {/* Left Sidebar: Folder & Note List */}
-        <aside className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
-          <div className="p-4 border-b border-slate-200 space-y-3">
-            <button 
-              onClick={() => setActiveNote(null)} 
-              className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5"
-            >
-              <Plus className="w-4 h-4" /> New AI Roadmap / Note
-            </button>
-
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-              <input 
-                className="input-field pl-8 py-1.5 text-xs" 
-                placeholder="Search notes..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
+        <main className="flex-1 flex overflow-hidden">
           
-          <div className="p-4 flex-1">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Your Notes</h3>
-            {loading ? (
-              <div className="text-center py-6 text-xs text-slate-400">Loading notes...</div>
-            ) : notes.length === 0 ? (
-              <div className="text-center py-6 text-xs text-slate-400">No notes found.</div>
-            ) : (
-              <div className="space-y-2">
-                {notes.map(item => (
-                  <button 
-                    key={item._id}
-                    onClick={() => setActiveNote(item)}
-                    className={`w-full text-left p-3 rounded-xl transition-all border flex flex-col gap-1 relative group ${
-                      activeNote?._id === item._id 
-                        ? 'bg-blue-50/70 border-blue-200' 
-                        : 'bg-white border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center pr-6">
-                      <span className="text-xs font-semibold text-slate-900 truncate w-full">{item.title}</span>
-                    </div>
-                    <div className="text-[10px] text-slate-400 flex justify-between w-full mt-1">
-                      <span className="text-purple-600 font-medium">{item.folder}</span>
-                      <span>{new Date(item.updatedAt || item.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <div 
-                      onClick={(e) => { e.stopPropagation(); handleDeleteNote(item._id); }}
-                      className="absolute right-2.5 top-2.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 p-1 cursor-pointer transition-opacity"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </div>
-                  </button>
-                ))}
+          {/* Left Sidebar: Folder & Note List */}
+          <aside className="w-80 border-r border-purple-200/70 bg-white flex flex-col shrink-0 overflow-y-auto">
+            <div className="p-4 border-b border-purple-100 space-y-3">
+              <button 
+                onClick={handleCreateNew} 
+                className="w-full py-2.5 px-4 rounded-2xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> New AI Note
+              </button>
+
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
+                <input 
+                  className="w-full pl-8 py-1.5 text-xs rounded-xl border border-purple-200 focus:border-[#6C47FF] outline-none" 
+                  placeholder="Search notes..." 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
-            )}
-          </div>
-        </aside>
-
-        {/* Note Editor Area */}
-        <section className="flex-1 flex flex-col bg-white overflow-hidden">
-          
-          {/* Editor Header Bar */}
-          <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-3 justify-between items-center bg-white shadow-sm shrink-0">
-            <input 
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Note Title (e.g. System Design Roadmap, DSA Revision)"
-              className="text-lg font-bold text-slate-900 outline-none w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-600 transition-colors py-1"
-            />
-
-            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
-              <select 
-                value={folder}
-                onChange={(e) => setFolder(e.target.value)}
-                className="input-field py-1.5 text-xs w-auto"
-              >
-                {FOLDERS.map(f => <option key={f}>{f}</option>)}
-              </select>
-
-              <button 
-                onClick={() => setShowAiModal(true)}
-                className="btn-ai text-xs py-2 px-3"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> AI Assist
-              </button>
-
-              <button 
-                onClick={handleSaveNote}
-                disabled={isSaving}
-                className="btn-primary text-xs py-2 px-4"
-              >
-                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                Save
-              </button>
             </div>
-          </div>
-
-          {/* Note Content Textarea */}
-          <div className="flex-1 p-6 overflow-y-auto bg-slate-50/50">
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your notes, code snippets, or placement roadmaps here..."
-              className="w-full h-full min-h-[400px] bg-transparent outline-none text-slate-800 text-sm leading-relaxed resize-none font-mono"
-            />
-          </div>
-
-        </section>
-
-      </main>
-
-      {/* AI Assistant Modal */}
-      {showAiModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-600" /> AI Note Assistant
-              </h3>
-              <button onClick={() => setShowAiModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-700">Select AI Action</label>
-              <select 
-                value={aiAction} 
-                onChange={(e) => setAiAction(e.target.value)}
-                className="input-field text-xs py-2"
-              >
-                <option value="summarize">Summarize Note Keypoints</option>
-                <option value="explain">Explain Concepts Simply</option>
-                <option value="improve">Improve Grammar & Clarity</option>
-              </select>
-            </div>
-
-            <button 
-              onClick={handleAIAction}
-              disabled={isGenerating}
-              className="btn-ai w-full py-2 text-xs"
-            >
-              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Generate AI Content'}
-            </button>
-
-            {aiResult && (
-              <div className="space-y-3 pt-2">
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 max-h-48 overflow-y-auto whitespace-pre-wrap">
-                  {aiResult}
+            
+            <div className="p-4 flex-1">
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Your Saved Notes</h3>
+              {loading ? (
+                <div className="text-center py-6 text-xs text-gray-400">Loading notes...</div>
+              ) : notes.length === 0 ? (
+                <div className="text-center py-6 text-xs text-gray-400 font-medium">No notes found. Create your first note!</div>
+              ) : (
+                <div className="space-y-2">
+                  {notes.map(item => (
+                    <button 
+                      key={item._id}
+                      onClick={() => handleSelectNote(item)}
+                      className={`w-full text-left p-3 rounded-2xl transition-all border flex flex-col gap-1 relative group cursor-pointer ${
+                        activeNote?._id === item._id 
+                          ? 'bg-[#EAE5FF] border-[#6C47FF] shadow-xs' 
+                          : 'bg-white border-purple-100 hover:border-purple-200'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center pr-6">
+                        <span className="text-xs font-bold text-[#1A1A2E] truncate w-full">{item.title}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-500 flex justify-between w-full mt-1 font-medium">
+                        <span className="text-[#6C47FF] font-bold">{item.folder}</span>
+                        <span>{new Date(item.updatedAt || item.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      
+                      <div 
+                        onClick={(e) => handleDelete(item._id, e)}
+                        className="absolute right-2.5 top-2.5 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-rose-600 p-1 cursor-pointer transition-opacity"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <button 
-                  onClick={applyAiResultToNote}
-                  className="btn-primary w-full py-2 text-xs"
+              )}
+            </div>
+          </aside>
+
+          {/* Note Editor Area */}
+          <section className="flex-1 flex flex-col bg-white overflow-hidden">
+            
+            {/* Editor Header Bar */}
+            <div className="p-4 border-b border-purple-100 flex flex-col sm:flex-row gap-3 justify-between items-center bg-white shadow-xs shrink-0">
+              <input 
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Note Title (e.g. System Design Notes, Distributed Databases)"
+                className="text-base font-extrabold text-[#1A1A2E] outline-none w-full bg-transparent border-b border-transparent focus:border-[#6C47FF] transition-colors py-1"
+              />
+
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+                <select 
+                  value={folder}
+                  onChange={(e) => setFolder(e.target.value)}
+                  className="py-1.5 px-3 rounded-xl border border-purple-200 text-xs font-bold text-gray-700 outline-none cursor-pointer"
                 >
-                  Append to Note
+                  {FOLDERS.map(f => <option key={f}>{f}</option>)}
+                </select>
+
+                <button 
+                  onClick={() => setShowAiModal(true)}
+                  className="py-1.5 px-3 rounded-xl bg-purple-100 text-[#6C47FF] text-xs font-bold hover:bg-purple-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> AI Assist
+                </button>
+
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="py-1.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  Save
                 </button>
               </div>
-            )}
+            </div>
+
+            {/* Note Content Textarea */}
+            <div className="flex-1 p-6 overflow-y-auto bg-purple-50/20">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Write your notes, ask AI questions, or draft placement roadmaps here..."
+                className="w-full h-full min-h-[400px] bg-transparent outline-none text-[#1A1A2E] text-xs leading-relaxed resize-none font-mono"
+              />
+            </div>
+
+          </section>
+
+        </main>
+
+        {/* AI Assistant Modal — Natural Language & Concept Intelligence */}
+        {showAiModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+            <div className="bg-white border border-purple-100 rounded-3xl shadow-xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] flex flex-col">
+              <div className="flex justify-between items-center border-b border-purple-100 pb-3 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1A1A2E]">AI Note Assistant</h3>
+                    <p className="text-[10px] text-gray-500 font-medium">Ask any technical question or generate structured study notes</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowAiModal(false)} className="text-gray-400 hover:text-gray-600 font-bold p-1 cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Natural Language Question Input */}
+              <div className="space-y-2 shrink-0">
+                <div className="relative">
+                  <textarea
+                    rows="2"
+                    placeholder="Ask any question in English, Hindi/Hinglish (e.g. 'Badi apps millions of users kaise handle karti h?', 'Database slow ho jaye to kya kare?', 'Explain this concept simply')..."
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAIAction();
+                      }
+                    }}
+                    className="w-full p-3 pr-12 rounded-2xl border border-purple-200 text-xs text-[#1A1A2E] outline-none focus:border-[#6C47FF] transition-all resize-none"
+                  />
+                  <button
+                    onClick={() => handleAIAction()}
+                    disabled={isGenerating || !customPrompt.trim()}
+                    className="absolute right-3 bottom-3 p-2 rounded-xl bg-[#6C47FF] text-white disabled:opacity-40 hover:bg-[#5A36EC] transition-all cursor-pointer"
+                  >
+                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Intent Action Pills — 3 Modes Only */}
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button 
+                  onClick={() => handleAIAction('explain')} 
+                  disabled={isGenerating}
+                  className="px-3.5 py-1.5 rounded-full bg-purple-50 text-[#6C47FF] border border-purple-100 hover:bg-purple-100 text-[11px] font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <BookOpen className="w-3.5 h-3.5" /> Explain Simply
+                </button>
+                <button 
+                  onClick={() => handleAIAction('roadmap')} 
+                  disabled={isGenerating}
+                  className="px-3.5 py-1.5 rounded-full bg-purple-50 text-[#6C47FF] border border-purple-100 hover:bg-purple-100 text-[11px] font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Target className="w-3.5 h-3.5" /> Learning Roadmap
+                </button>
+                <button 
+                  onClick={() => handleAIAction('summarize')} 
+                  disabled={isGenerating}
+                  className="px-3.5 py-1.5 rounded-full bg-purple-50 text-[#6C47FF] border border-purple-100 hover:bg-purple-100 text-[11px] font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> Summarize Note
+                </button>
+              </div>
+
+              {/* Response Output Display with ReactMarkdown */}
+              <div className="flex-1 min-h-[180px] overflow-y-auto bg-purple-50/40 border border-purple-100 rounded-2xl p-4 space-y-3">
+                {isGenerating ? (
+                  <div className="flex items-center justify-center h-full text-xs text-purple-600 font-medium gap-2 py-8">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>HireNova AI is generating structured study notes...</span>
+                  </div>
+                ) : aiResult ? (
+                  <div className="prose prose-sm max-w-none text-xs text-slate-800 font-sans leading-relaxed space-y-2">
+                    <ReactMarkdown>{aiResult}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-xs text-gray-400 font-medium">
+                    Type any technical question above or select an AI action pill to generate structured notes.
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons for Integration */}
+              {aiResult && (
+                <div className="flex items-center justify-between gap-3 pt-2 shrink-0 border-t border-purple-100">
+                  <button
+                    onClick={() => {
+                      setChatHistory([]);
+                      setAiResult('');
+                    }}
+                    className="py-2 px-3 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Clear Session
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={saveAiResultAsNewNote}
+                      className="py-2 px-4 rounded-xl bg-purple-100 text-[#6C47FF] font-bold text-xs hover:bg-purple-200 transition-all cursor-pointer"
+                    >
+                      Save as New Note
+                    </button>
+                    <button 
+                      onClick={applyAiResultToNote}
+                      className="py-2 px-4 rounded-xl bg-[#6C47FF] text-white font-bold text-xs hover:bg-[#5A36EC] transition-all shadow-xs cursor-pointer"
+                    >
+                      Append to Active Note
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

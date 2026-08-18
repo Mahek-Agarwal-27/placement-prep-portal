@@ -1,22 +1,38 @@
 import React from 'react';
 
-const Logo = ({ className = "h-7 w-7", showText = true, textClassName = "text-lg font-bold" }) => {
+const Logo = ({ className = "h-9 w-9", showText = true, textClassName = "text-2xl font-bold", subtitle = null }) => {
   return (
-    <div className="flex items-center gap-2 select-none">
-      {/* SaaS Blue Icon */}
-      <div className="bg-blue-600 text-white rounded-lg p-1.5 flex items-center justify-center shadow-sm">
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.71 1.1-1.63 1.1-2.6 0-1.04-.42-2.02-1.15-2.75" />
-          <path d="M12 15l-3-3 6.5-6.5a2.12 2.12 0 0 1 3 3L12 15z" />
-          <path d="M15 12l2 2" />
+    <div className="flex items-center gap-2.5 select-none">
+      {/* Official HireNovaAI Brand Logo Vector matching exact user image */}
+      <div className="relative flex items-center justify-center shrink-0">
+        <svg className={className} viewBox="0 0 100 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="hn_logo_grad" x1="0" y1="0" x2="100" y2="115" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#7E47FF" />
+              <stop offset="100%" stopColor="#5D26ED" />
+            </linearGradient>
+          </defs>
+          {/* Left Vertical Pillar */}
+          <rect x="20" y="10" width="22" height="75" rx="11" fill="url(#hn_logo_grad)" />
+          {/* Right Vertical Pillar with Upward Arrow Head */}
+          <path d="M58 20 C 58 14, 63 10, 70 10 C 77 10, 80 14, 80 20 L 80 75 C 80 81, 74 85, 69 85 C 62 85, 58 81, 58 75 Z" fill="url(#hn_logo_grad)" />
+          {/* Diagonal Bridge Connecting Left and Right */}
+          <path d="M 20 62 C 20 48, 42 42, 58 26 L 68 20 L 68 34 C 54 48, 32 54, 20 74 Z" fill="url(#hn_logo_grad)" />
         </svg>
       </div>
 
       {/* Brand Text */}
       {showText && (
-        <span className={`${textClassName} tracking-tight text-slate-900`}>
-          HireNova<span className="text-blue-600 font-semibold">AI</span>
-        </span>
+        <div className="flex flex-col leading-tight">
+          <span className={`${textClassName} tracking-tight font-extrabold text-[#1A1A2E]`}>
+            HireNova<span className="text-[#6C47FF]">AI</span>
+          </span>
+          {subtitle && (
+            <span className="text-[10px] font-semibold tracking-wide text-[#6C47FF] uppercase">
+              {subtitle}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,9 +1,9 @@
 /* ==========================================================================
-   Global Styles — HireNovaAI (Clean Minimal SaaS Design System)
-   Inspired by Linear, Notion & Vercel
+   Global Styles — HireNovaAI (Lavender Modern AI SaaS Design System)
+   Exact match to provided design references
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -11,56 +11,38 @@
 
 /* ---------- Design Tokens ---------- */
 :root {
-  --bg-app: #F8FAFC;
+  --bg-app: #EFE9FE;            /* Gentle pastel lavender outer canvas */
+  --bg-app-light: #F4EFFF;
   --bg-card: #FFFFFF;
-  --bg-muted: #F1F5F9;
+  --bg-card-tint: #E8DEFD;       /* Lavender tint background box for overview sections */
+  --bg-purple-light: #F2EEFF;
   
-  --border-color: #E5E7EB;
-  --border-subtle: #F3F4F6;
+  --border-color: #E2D7FE;
+  --border-subtle: #EDE5FE;
   
-  --text-main: #111827;
-  --text-muted: #6B7280;
-  --text-light: #9CA3AF;
+  --text-main: #1A1A2E;         /* Deep rich charcoal */
+  --text-muted: #6E6D7A;
+  --text-light: #9493A2;
   
-  --primary-blue: #2563EB;
-  --primary-blue-hover: #1D4ED8;
-  --primary-blue-light: #EFF6FF;
+  --primary-purple: #6C47FF;     /* Main action purple button */
+  --primary-purple-hover: #5A36EC;
+  --primary-purple-light: #ECE7FF;
   
-  --ai-purple: #7C3AED;
-  --ai-purple-light: #F5F3FF;
-  --ai-purple-border: #DDD6FE;
-  
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --ai-purple: #6C47FF;
+  --ai-purple-light: #EBE5FF;
+  --ai-purple-border: #D7C7FE;
 
-  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-}
+  --status-green: #10B981;
+  
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-pill: 9999px;
 
-html.dark {
-  --bg-app: #0F172A;
-  --bg-card: #1E293B;
-  --bg-muted: #334155;
-  
-  --border-color: #334155;
-  --border-subtle: #1E293B;
-  
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  --text-light: #64748B;
-  
-  --primary-blue: #3B82F6;
-  --primary-blue-hover: #2563EB;
-  --primary-blue-light: #1E3A8A;
-  
-  --ai-purple: #A855F7;
-  --ai-purple-light: #3B0764;
-  --ai-purple-border: #6B21A8;
-
-  color-scheme: dark;
+  --shadow-subtle: 0 2px 8px rgba(108, 71, 255, 0.04);
+  --shadow-card: 0 4px 20px rgba(108, 71, 255, 0.06);
+  --shadow-hover: 0 8px 30px rgba(108, 71, 255, 0.12);
 }
 
 /* ---------- Base Styles ---------- */
@@ -94,13 +76,13 @@ body {
 /* ---------- Scrollbar ---------- */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-app); }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+::-webkit-scrollbar-thumb { background: #D5C5FE; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #B8A0FE; }
 
 /* ---------- Reusable Component Classes ---------- */
 @layer components {
 
-  /* Enterprise Card */
+  /* Design System Cards */
   .card-saas {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -111,7 +93,7 @@ body {
   }
   .card-saas:hover {
     box-shadow: var(--shadow-hover);
-    border-color: #D1D5DB;
+    border-color: #C8B7FE;
   }
 
   .card-ai {
@@ -119,11 +101,10 @@ body {
     border: 1px solid var(--ai-purple-border);
     border-radius: var(--radius-xl);
     padding: 1.25rem;
-    box-shadow: 0 1px 3px 0 rgba(124, 58, 237, 0.05);
+    box-shadow: var(--shadow-card);
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
-  /* Legacy card support alias */
   .card {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -133,20 +114,21 @@ body {
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
-  /* Clean Navbar */
-  .navbar-clean {
-    background-color: #FFFFFF;
-    border-bottom: 1px solid var(--border-color);
-    box-shadow: var(--shadow-subtle);
+  /* Containers */
+  .purple-panel {
+    background-color: #E6DCFF;
+    border: 1px solid #D6C4FF;
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
   }
 
-  /* Primary Button */
+  /* Primary Button - Match Reference Exact Design (#6C47FF Pill Button) */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-white shadow-sm transition-all;
-    background-color: var(--primary-blue);
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm text-white shadow-sm transition-all;
+    background-color: var(--primary-purple);
   }
   .btn-primary:hover {
-    background-color: var(--primary-blue-hover);
+    background-color: var(--primary-purple-hover);
     box-shadow: var(--shadow-hover);
   }
   .btn-primary:active { transform: translateY(1px); }
@@ -157,10 +139,10 @@ body {
 
   /* Secondary Button */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-slate-700 bg-white border border-slate-200 shadow-sm transition-all;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm text-slate-800 bg-white border border-purple-200 shadow-sm transition-all;
   }
   .btn-secondary:hover {
-    @apply bg-slate-50 border-slate-300 text-slate-900;
+    @apply bg-purple-50 border-purple-300 text-purple-900;
   }
   .btn-secondary:disabled {
     @apply opacity-50 cursor-not-allowed;
@@ -168,43 +150,43 @@ body {
 
   /* AI Special Button */
   .btn-ai {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-white shadow-sm transition-all;
-    background-color: var(--ai-purple);
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm text-white shadow-sm transition-all;
+    background-color: var(--primary-purple);
   }
   .btn-ai:hover {
-    background-color: #6D28D9;
+    background-color: var(--primary-purple-hover);
     box-shadow: var(--shadow-hover);
   }
 
-  /* Clean Input Field */
+  /* Form Inputs */
   .input-field {
-    @apply w-full px-3.5 py-2 rounded-lg text-sm outline-none transition-all;
+    @apply w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all;
     background-color: #FFFFFF;
     border: 1px solid var(--border-color);
     color: var(--text-main);
   }
   .input-field:focus {
-    border-color: var(--primary-blue);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(108, 71, 255, 0.15);
   }
   .input-field::placeholder {
     color: var(--text-light);
   }
   .input-field:disabled {
-    @apply bg-slate-50 opacity-60 cursor-not-allowed;
+    @apply bg-purple-50/50 opacity-60 cursor-not-allowed;
   }
 
-  /* Minimal Badges */
-  .badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
+  /* Badges */
+  .badge { @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold; }
   .badge-easy   { @apply bg-emerald-50 text-emerald-700 border border-emerald-200; }
   .badge-medium { @apply bg-amber-50 text-amber-700 border border-amber-200; }
   .badge-hard   { @apply bg-rose-50 text-rose-700 border border-rose-200; }
-  .badge-blue   { @apply bg-blue-50 text-blue-700 border border-blue-200; }
-  .badge-purple { @apply bg-purple-50 text-purple-700 border border-purple-200; }
+  .badge-blue   { @apply bg-purple-50 text-purple-700 border border-purple-200; }
+  .badge-purple { @apply bg-purple-100 text-purple-800 border border-purple-300; }
 
   /* Typography Helper Classes */
-  .heading-lg { @apply text-2xl font-semibold tracking-tight text-slate-900; }
-  .heading-md { @apply text-lg font-semibold tracking-tight text-slate-900; }
+  .heading-lg { @apply text-2xl font-bold tracking-tight text-slate-900; }
+  .heading-md { @apply text-lg font-bold tracking-tight text-slate-900; }
   .heading-sm { @apply text-sm font-semibold text-slate-900; }
   .text-body   { @apply text-sm text-slate-600; }
   .text-muted  { @apply text-xs text-slate-500; }
@@ -216,3 +198,41 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+
+/* ---------- Hero Orbital System Animations ---------- */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes spinReverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+@keyframes floatSubtle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.08); }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 48s linear infinite;
+}
+
+.animate-spin-reverse {
+  animation: spinReverse 48s linear infinite;
+}
+
+.animate-float-subtle {
+  animation: floatSubtle 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 6s ease-in-out infinite;
+}
+

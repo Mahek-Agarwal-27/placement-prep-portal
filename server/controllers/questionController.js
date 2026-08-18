@@ -56,24 +56,33 @@ exports.addQuestion = asyncHandler(async (req, res) => {
     solvedAt:   status === 'solved' ? new Date() : null,
   });
 
-  // If the question is marked solved, increment user stat counter and log activity
+  // If the question is marked solved, increment user stat counter, update streak, log activity
   if (status === 'solved') {
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $inc: { 'stats.totalDSASolved': 1 } },
-      { new: true }
-    );
-    const { evaluateAchievements } = require('../utils/achievementEngine');
-    if (evaluateAchievements(user)) {
-      await user.save();
+    const user = await User.findById(req.user.id);
+    if (user) {
+      user.stats.totalDSASolved = (user.stats.totalDSASolved || 0) + 1;
+      await user.updateStreak();
+      const { evaluateAchievements } = require('../utils/achievementEngine');
+      if (evaluateAchievements(user)) {
+        await user.save();
+      }
     }
 
     const Activity = require('../models/Activity');
+    const Notification = require('../models/Notification');
+    
     Activity.create({
       user: req.user.id,
       type: 'dsa',
       title: `Completed ${difficulty} DSA Problem`,
       description: `${title} (${topic || 'DSA'})`,
+    }).catch(() => {});
+
+    Notification.create({
+      user: req.user.id,
+      type: 'dsa',
+      title: 'DSA Problem Solved',
+      message: `You successfully solved "${title}" (${difficulty} - ${topic || 'DSA'}).`,
     }).catch(() => {});
   }
 
@@ -106,16 +115,16 @@ exports.updateQuestion = asyncHandler(async (req, res) => {
     question.status = status;
 
     if (status === 'solved' && prevStatus !== 'solved') {
-      // Newly solved — increment user counter and check achievements
+      // Newly solved — increment user counter & update streak
       question.solvedAt = new Date();
-      const user = await User.findByIdAndUpdate(
-        req.user.id,
-        { $inc: { 'stats.totalDSASolved': 1 } },
-        { new: true }
-      );
-      const { evaluateAchievements } = require('../utils/achievementEngine');
-      if (evaluateAchievements(user)) {
-        await user.save();
+      const user = await User.findById(req.user.id);
+      if (user) {
+        user.stats.totalDSASolved = (user.stats.totalDSASolved || 0) + 1;
+        await user.updateStreak();
+        const { evaluateAchievements } = require('../utils/achievementEngine');
+        if (evaluateAchievements(user)) {
+          await user.save();
+        }
       }
     } else if (status !== 'solved' && prevStatus === 'solved') {
       // Un-solving — decrement user counter

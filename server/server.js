@@ -23,7 +23,7 @@ const app = express();
 
 // ── Database ──────────────────────────────────────────────────────────────────
 connectDB();
-console.log(`🔑 GEMINI_API_KEY loaded: ${process.env.GEMINI_API_KEY ? 'YES (' + process.env.GEMINI_API_KEY.substring(0, 5) + '...)' : 'NO'}`);
+console.log(`🔑 GROQ_API_KEY loaded: ${process.env.GROQ_API_KEY ? 'YES (' + process.env.GROQ_API_KEY.substring(0, 5) + '...)' : (process.env.GEMINI_API_KEY ? 'YES (via GEMINI_API_KEY)' : 'NO')}`);
 
 // ── Middlewares ───────────────────────────────────────────────────────────────
 
@@ -56,6 +56,7 @@ app.use('/api/resumes', require('./routes/resumeRoutes'));    // Phase 7: Resume
 app.use('/api/interviews', require('./routes/interviewRoutes')); // Phase 8: AI Mock Interview
 app.use('/api/ai-history', require('./routes/aiHistoryRoutes')); // AI History Storage
 app.use('/api/activities', require('./routes/activityRoutes')); // User Activity Timeline
+app.use('/api/activity', require('./routes/activityRoutes'));   // Realtime Study Timer & Activity Stats
 app.use('/api/analytics', require('./routes/analyticsRoutes')); // Realtime Analytics & Readiness Score
 app.use('/api/users', require('./routes/userRoutes')); // User Account & Data Export
 app.use('/api/notifications', require('./routes/notificationRoutes')); // Notifications Center

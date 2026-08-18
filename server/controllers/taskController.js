@@ -118,6 +118,14 @@ exports.updateTask = asyncHandler(async (req, res) => {
       if (evaluateAchievements(user)) {
         await user.save();
       }
+
+      const Notification = require('../models/Notification');
+      Notification.create({
+        user: req.user.id,
+        type: 'roadmap',
+        title: 'Study Task Completed',
+        message: `Great job! You finished "${task.title}".`,
+      }).catch(() => {});
     } else if (status !== 'completed' && prevStatus === 'completed') {
       task.completedAt = null;
       await User.findByIdAndUpdate(req.user.id, {
@@ -209,4 +217,33 @@ exports.getTaskStats = asyncHandler(async (req, res) => {
     },
     'Task stats fetched successfully'
   ));
+});
+
+// @desc    Get upcoming study sessions for dashboard card (sorted by date, nearest first)
+// @route   GET /api/tasks/upcoming
+// @access  Private
+exports.getUpcomingSession = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Find incomplete tasks sorted by dueDate (nearest date first)
+  let upcomingTasks = await Task.find({
+    user: userId,
+    status: { $ne: 'completed' },
+    dueDate: { $gte: startOfToday },
+  })
+    .sort({ dueDate: 1, createdAt: -1 })
+    .limit(5);
+
+  if (upcomingTasks.length === 0) {
+    upcomingTasks = await Task.find({
+      user: userId,
+      status: { $ne: 'completed' },
+    })
+      .sort({ createdAt: -1 })
+      .limit(5);
+  }
+
+  res.status(200).json(successResponse(upcomingTasks, 'Upcoming study sessions fetched successfully'));
 });

@@ -25,6 +25,16 @@ const userService = {
     const response = await api.get('/analytics/realtime');
     return response.data;
   },
+
+  getAnalytics: async () => {
+    const response = await api.get('/users/analytics');
+    return response.data;
+  },
+
+  logStudySession: async (data) => {
+    const response = await api.post('/users/study-session', data);
+    return response.data;
+  },
 };
 
 export default userService;

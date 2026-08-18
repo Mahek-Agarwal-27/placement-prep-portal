@@ -5,6 +5,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import SplashScreen from './components/SplashScreen';
 
 // Import Pages
+import LandingPage from './pages/LandingPage';
+import FeaturesPage from './pages/FeaturesPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
@@ -42,8 +46,11 @@ function App() {
       <AuthProvider>
         <Router>
           <Routes>
-            {/* Main Landing Redirects to dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Main Landing Route & Marketing Sub-pages */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
 
             {/* Public Auth Routes */}
             <Route path="/login"  element={<LoginPage />} />
@@ -64,8 +71,14 @@ function App() {
             <Route path="/ai-history" element={
               <ProtectedRoute><AIHistoryPage /></ProtectedRoute>
             } />
+            <Route path="/dsa" element={
+              <ProtectedRoute><DSATrackerPage /></ProtectedRoute>
+            } />
             <Route path="/dsa-tracker" element={
               <ProtectedRoute><DSATrackerPage /></ProtectedRoute>
+            } />
+            <Route path="/planner" element={
+              <ProtectedRoute><StudyPlannerPage /></ProtectedRoute>
             } />
             <Route path="/study-planner" element={
               <ProtectedRoute><StudyPlannerPage /></ProtectedRoute>
@@ -73,8 +86,14 @@ function App() {
             <Route path="/notes" element={
               <ProtectedRoute><NotesPage /></ProtectedRoute>
             } />
+            <Route path="/resume" element={
+              <ProtectedRoute><ResumeAnalyzerPage /></ProtectedRoute>
+            } />
             <Route path="/resume-analyzer" element={
               <ProtectedRoute><ResumeAnalyzerPage /></ProtectedRoute>
+            } />
+            <Route path="/interview" element={
+              <ProtectedRoute><InterviewPage /></ProtectedRoute>
             } />
             <Route path="/mock-interview" element={
               <ProtectedRoute><InterviewPage /></ProtectedRoute>
@@ -84,7 +103,7 @@ function App() {
             } />
 
             {/* Fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <FloatingAIAssistant />
         </Router>

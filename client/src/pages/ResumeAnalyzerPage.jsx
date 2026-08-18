@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import resumeService from '../services/resumeService';
 import { 
   FileText, 
@@ -59,28 +60,29 @@ const ResumeAnalyzerPage = () => {
   };
 
   const finishStepProgress = async () => {
-    clearTimeout(stepTimerRef.current);
-    setCurrentStep(4);
-    await new Promise(r => setTimeout(r, 300));
-    setCurrentStep(5);
+    if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+    setCurrentStep(3);
     await new Promise(r => setTimeout(r, 400));
+    setCurrentStep(4);
+    await new Promise(r => setTimeout(r, 400));
+    setCurrentStep(5);
+    await new Promise(r => setTimeout(r, 300));
     setCurrentStep(0);
   };
 
   const resetStepProgress = () => {
-    clearTimeout(stepTimerRef.current);
+    if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
     setCurrentStep(0);
   };
 
   const fetchHistory = async () => {
-    setLoadingHistory(true);
     try {
       const res = await resumeService.getResumes();
       if (res.success) {
         setHistory(res.data);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoadingHistory(false);
     }
@@ -96,8 +98,7 @@ const ResumeAnalyzerPage = () => {
       setFile(selected);
       setError('');
     } else {
-      setFile(null);
-      setError('Please select a valid PDF file.');
+      setError('Only PDF files are allowed.');
     }
   };
 
@@ -165,8 +166,10 @@ const ResumeAnalyzerPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col h-screen overflow-hidden">
-      <Navbar />
+    <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased h-screen overflow-hidden">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar />
 
       <main className="flex-1 flex overflow-hidden">
         
@@ -451,6 +454,7 @@ const ResumeAnalyzerPage = () => {
 
         </section>
       </main>
+      </div>
     </div>
   );
 };

@@ -42,6 +42,18 @@ const InterviewSchema = new mongoose.Schema(
     feedback: {
       score: {
         type: Number,
+        default: null,
+      },
+      evaluationStatus: {
+        type: String,
+        default: 'Completed', // 'Completed', 'Insufficient Data', 'Limited Response'
+      },
+      totalQuestionsAsked: {
+        type: Number,
+        default: 0,
+      },
+      totalAnswersProvided: {
+        type: Number,
         default: 0,
       },
       strengths: {
@@ -55,6 +67,14 @@ const InterviewSchema = new mongoose.Schema(
       generalTips: {
         type: String,
         default: '',
+      },
+      topicsToImprove: {
+        type: [String],
+        default: [],
+      },
+      recommendedPracticeQuestions: {
+        type: [String],
+        default: [],
       },
     },
   },
