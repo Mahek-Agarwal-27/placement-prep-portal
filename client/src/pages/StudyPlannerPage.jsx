@@ -252,6 +252,15 @@ const StudyPlannerPage = () => {
     } catch (_) {}
   };
 
+  const handleClearAll = async () => {
+    if (!window.confirm('Are you sure you want to clear ALL study tasks?')) return;
+    try {
+      await taskService.clearAll();
+      fetchTasks();
+      fetchStats();
+    } catch (_) {}
+  };
+
   return (
     <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased">
       <Sidebar />
@@ -271,12 +280,23 @@ const StudyPlannerPage = () => {
             </p>
           </div>
 
-          <button 
-            onClick={() => { setEditTarget(null); setModalOpen(true); }}
-            className="btn-primary"
-          >
-            <Plus className="w-4 h-4" /> Add Task
-          </button>
+          <div className="flex items-center gap-3">
+            {tasks.length > 0 && (
+              <button 
+                onClick={handleClearAll}
+                className="px-4 py-2.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-100 transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Clear all study tasks"
+              >
+                <Trash2 className="w-4 h-4" /> Clear All
+              </button>
+            )}
+            <button 
+              onClick={() => { setEditTarget(null); setModalOpen(true); }}
+              className="btn-primary"
+            >
+              <Plus className="w-4 h-4" /> Add Task
+            </button>
+          </div>
         </div>
 
         {/* Stats Row */}

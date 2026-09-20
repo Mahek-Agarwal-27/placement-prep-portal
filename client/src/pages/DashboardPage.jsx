@@ -1,38 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import userService from '../services/userService';
-import focusService from '../services/focusService';
-import activityService from '../services/activityService';
-import activityTrackerService from '../services/activityTrackerService';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import FloatingAIAssistant from '../components/FloatingAIAssistant';
-import StudyTimer from '../components/StudyTimer';
 import {
-  Flame,
-  Target,
   Code2,
   FileText,
-  MessageSquare,
   Sparkles,
-  ArrowRight,
-  TrendingUp,
-  Clock,
-  RefreshCw,
   Calendar as CalendarIcon,
-  CheckCircle2,
-  BookOpen,
   Bot,
-  Circle,
-  MapPin,
   Mic,
-  Award
+  ArrowRight,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 
 import taskService from '../services/taskService';
 import questionService from '../services/questionService';
 import interviewService from '../services/interviewService';
+import resumeService from '../services/resumeService';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -42,68 +29,59 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [showRecModal, setShowRecModal] = useState(false);
 
-  // Dedicated overview card states
+  // Real user data state
+  const [tasks, setTasks] = useState([]);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
-  const [upcomingDSA, setUpcomingDSA] = useState([]);
+  const [questions, setQuestions] = useState([]);
+  const [pendingDSA, setPendingDSA] = useState([]);
+  const [interviews, setInterviews] = useState([]);
   const [upcomingInterview, setUpcomingInterview] = useState(null);
-
-  // Analytics state
-  const [analytics, setAnalytics] = useState({
-    currentStreak: 0,
-    longestStreak: 0,
-    studyHours: 0,
-    readinessScore: 0,
-    dsaProgress: 0,
-    resumeScore: null,
-    interviewProgress: 0,
-    aiSessions: 0,
-    weeklyStudyData: [],
-  });
+  const [resumes, setResumes] = useState([]);
+  const [latestResume, setLatestResume] = useState(null);
 
   const fetchData = async () => {
     try {
-      const [analyticsRes, activityStatsRes, upcomingRes, questionsRes, interviewsRes] = await Promise.all([
-        userService.getAnalytics(),
-        activityTrackerService.getActivityStats(),
+      const [tasksRes, upcomingRes, questionsRes, pendingQRes, interviewsRes, resumesRes] = await Promise.allSettled([
+        taskService.getTasks(),
         taskService.getUpcomingSession(),
+        questionService.getQuestions(),
         questionService.getQuestions({ status: 'to-do' }),
         interviewService.getInterviews(),
+        resumeService.getResumes(),
       ]);
 
-      let realtimeHours = 0;
-      let realtimeMinutes = 0;
-      if (activityStatsRes.success && activityStatsRes.data) {
-        realtimeMinutes = activityStatsRes.data.totalMinutes || 0;
-        realtimeHours = activityStatsRes.data.totalHours || 0;
+      if (tasksRes.status === 'fulfilled' && tasksRes.value?.success && Array.isArray(tasksRes.value.data)) {
+        setTasks(tasksRes.value.data);
       }
 
-      if (analyticsRes.success && analyticsRes.data) {
-        setAnalytics({
-          ...analyticsRes.data,
-          studyHours: realtimeHours > 0 ? realtimeHours : analyticsRes.data.studyHours,
-          totalMinutes: realtimeMinutes,
-        });
+      if (upcomingRes.status === 'fulfilled' && upcomingRes.value?.success) {
+        if (Array.isArray(upcomingRes.value.data)) {
+          setUpcomingTasks(upcomingRes.value.data);
+        } else if (upcomingRes.value.data) {
+          setUpcomingTasks([upcomingRes.value.data]);
+        } else {
+          setUpcomingTasks([]);
+        }
       }
 
-      if (upcomingRes.success && Array.isArray(upcomingRes.data)) {
-        setUpcomingTasks(upcomingRes.data);
-      } else if (upcomingRes.success && upcomingRes.data) {
-        setUpcomingTasks([upcomingRes.data]);
-      } else {
-        setUpcomingTasks([]);
+      if (questionsRes.status === 'fulfilled' && questionsRes.value?.success && Array.isArray(questionsRes.value.data)) {
+        setQuestions(questionsRes.value.data);
       }
 
-      if (questionsRes.success && Array.isArray(questionsRes.data)) {
-        setUpcomingDSA(questionsRes.data);
-      } else {
-        setUpcomingDSA([]);
+      if (pendingQRes.status === 'fulfilled' && pendingQRes.value?.success && Array.isArray(pendingQRes.value.data)) {
+        setPendingDSA(pendingQRes.value.data);
       }
 
-      if (interviewsRes.success && Array.isArray(interviewsRes.data)) {
-        const activeOrRecent = interviewsRes.data.find(i => i.status === 'active') || interviewsRes.data[0] || null;
+      if (interviewsRes.status === 'fulfilled' && interviewsRes.value?.success && Array.isArray(interviewsRes.value.data)) {
+        const list = interviewsRes.value.data;
+        setInterviews(list);
+        const activeOrRecent = list.find((i) => i.status === 'active') || list[0] || null;
         setUpcomingInterview(activeOrRecent);
-      } else {
-        setUpcomingInterview(null);
+      }
+
+      if (resumesRes.status === 'fulfilled' && resumesRes.value?.success && Array.isArray(resumesRes.value.data)) {
+        setResumes(resumesRes.value.data);
+        setLatestResume(resumesRes.value.data[0] || null);
       }
     } catch (err) {
       console.error('Error fetching dashboard:', err);
@@ -116,31 +94,102 @@ const DashboardPage = () => {
     fetchData();
   }, [location.pathname]);
 
+  // Compute dynamic AI Recommendation based on real user activity
+  const getDynamicAIRecommendation = () => {
+    if (!latestResume) {
+      return {
+        title: 'Upload Resume for ATS Check',
+        shortDesc: 'Analyze your resume ATS match score & get instant optimization tips.',
+        modalTitle: 'AI Resume ATS Recommendation',
+        modalPoints: [
+          'Upload your latest resume in PDF or DOCX format.',
+          'Benchmark your technical keywords against modern job descriptions.',
+          'Identify missing skills to pass corporate automated screeners.'
+        ],
+        actionLabel: 'Go to Resume Analyzer',
+        actionPath: '/resume-analyzer'
+      };
+    }
+
+    if (pendingDSA.length > 0) {
+      const topTopic = pendingDSA[0]?.topic || 'Data Structures';
+      return {
+        title: `Focus on ${topTopic}`,
+        shortDesc: `You have ${pendingDSA.length} pending problem${pendingDSA.length === 1 ? '' : 's'}. Target ${topTopic} to build problem-solving agility.`,
+        modalTitle: `AI DSA Strategy: ${topTopic}`,
+        modalPoints: [
+          `Prioritize pending questions: ${pendingDSA.slice(0, 2).map((q) => q.title).join(', ')}.`,
+          'Focus on time & space complexity edge cases.',
+          'Mark questions as completed to track your mastery progress.'
+        ],
+        actionLabel: 'Open DSA Tracker',
+        actionPath: '/dsa-tracker'
+      };
+    }
+
+    if (interviews.length === 0) {
+      return {
+        title: 'Start First Mock Interview',
+        shortDesc: 'Simulate live technical & behavioral rounds with AI Recruiter.',
+        modalTitle: 'AI Interview Readiness Recommendation',
+        modalPoints: [
+          'Practice live coding explanations and problem formulation.',
+          'Receive detailed scoring on technical accuracy & communication.',
+          'Review AI feedback breakdown to target weak spots.'
+        ],
+        actionLabel: 'Start Mock Interview',
+        actionPath: '/mock-interview'
+      };
+    }
+
+    const completedTasksCount = tasks.filter((t) => t.status === 'completed').length;
+    return {
+      title: 'Maintain Prep Consistency',
+      shortDesc: `${completedTasksCount}/${tasks.length || 0} tasks done • ${questions.length} DSA problems logged. Keep your momentum going.`,
+      modalTitle: 'AI Placement Roadmap',
+      modalPoints: [
+        'Review your recent mock interview feedback notes.',
+        'Complete today\'s study milestones in the study planner.',
+        'Solve 1-2 medium DSA problems to stay sharp.'
+      ],
+      actionLabel: 'Open Study Planner',
+      actionPath: '/study-planner'
+    };
+  };
+
+  const aiRec = getDynamicAIRecommendation();
+  const completedTasksCount = tasks.filter((t) => t.status === 'completed').length;
+
   return (
     <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased">
-      {/* ── LEFT SIDEBAR (Matching reference design 1) ────────────────────── */}
+      {/* ── LEFT SIDEBAR ─────────────────────────────────────────────── */}
       <Sidebar />
 
-      {/* ── MAIN CONTENT AREA ────────────────────────────────────────────── */}
+      {/* ── MAIN CONTENT AREA ────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
-        {/* ── TOP HEADER BAR (Matching reference design 1) ─────────────────── */}
+        {/* ── TOP HEADER BAR ─────────────────────────────────────────── */}
         <Navbar />
 
-        {/* ── MAIN DASHBOARD CONTAINER ───────────────────────────────────── */}
+        {/* ── MAIN DASHBOARD CONTAINER ───────────────────────────────── */}
         <main className="p-8 space-y-8 max-w-[1500px] w-full mx-auto">
 
-          {/* ── AI OVERVIEW PANEL (Matching Reference Design 1 Top Outer Container) ── */}
+          {/* ── AI OVERVIEW PANEL ── */}
           <div className="purple-panel bg-[#E8DEFD] border border-[#D7C7FE] rounded-3xl p-6 space-y-4 shadow-sm">
-            <h2 className="text-base font-extrabold text-[#1A1A2E] tracking-tight mb-2">
-              AI Overview
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-extrabold text-[#1A1A2E] tracking-tight">
+                AI Overview
+              </h2>
+              <span className="text-[11px] font-bold text-purple-700 bg-purple-200/60 px-3 py-1 rounded-full border border-purple-300/40">
+                Live Insights
+              </span>
+            </div>
 
-            {/* 4 Equal White Sub-cards Row matching exact layout in Reference Design 1 */}
+            {/* 4 Equal Workable Sub-cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
               {/* Card 1: AI Recommendation */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4">
+              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
                 <div>
                   <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center mb-3">
                     <Bot className="w-5 h-5 text-[#6C47FF]" />
@@ -148,11 +197,11 @@ const DashboardPage = () => {
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
                     AI Recommendation
                   </span>
-                  <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
-                    Focus on Graphs this week.
+                  <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug line-clamp-1">
+                    {aiRec.title}
                   </h3>
-                  <p className="text-xs text-gray-500 mt-2 font-medium">
-                    AI recommends Graphs this week to maximize interview readiness.
+                  <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
+                    {aiRec.shortDesc}
                   </p>
                 </div>
                 <button
@@ -164,7 +213,7 @@ const DashboardPage = () => {
               </div>
 
               {/* Card 2: Resume Status */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4">
+              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
                 <div>
                   <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center mb-3">
                     <FileText className="w-5 h-5 text-[#6C47FF]" />
@@ -172,23 +221,36 @@ const DashboardPage = () => {
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
                     Resume Status
                   </span>
-                  <h3 className="text-sm font-extrabold text-emerald-600 leading-snug">
-                    Ready for Review
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-2 font-medium">
-                    Improve your resume before your next interview.
-                  </p>
+                  {latestResume ? (
+                    <>
+                      <h3 className="text-sm font-extrabold text-emerald-600 leading-snug">
+                        ATS Score: {latestResume.atsScore || 0}%
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
+                        {latestResume.targetRole ? `Target: ${latestResume.targetRole}` : (latestResume.fileName || 'Resume analyzed')}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
+                        No Resume Analyzed
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
+                        Upload your resume to get instant ATS match scoring & feedback.
+                      </p>
+                    </>
+                  )}
                 </div>
                 <button
                   onClick={() => navigate('/resume-analyzer')}
                   className="w-full py-2.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs"
                 >
-                  Improve Resume
+                  {latestResume ? 'Improve Resume' : 'Analyze Resume'}
                 </button>
               </div>
 
               {/* Card 3: Mock Interview */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4">
+              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
                 <div>
                   <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center mb-3">
                     <Mic className="w-5 h-5 text-[#6C47FF]" />
@@ -196,124 +258,77 @@ const DashboardPage = () => {
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
                     Mock Interview
                   </span>
-                  <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
-                    Next Session
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-2 font-medium">
-                    Today • 6:00 PM
-                  </p>
+                  {upcomingInterview ? (
+                    <>
+                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug line-clamp-1">
+                        {upcomingInterview.topic || 'Interview Session'}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
+                        {upcomingInterview.status === 'active'
+                          ? 'Active session in progress'
+                          : upcomingInterview.feedback?.score !== undefined
+                            ? `Last Score: ${upcomingInterview.feedback.score}% • ${upcomingInterview.type || 'Technical'}`
+                            : `${upcomingInterview.type || 'Technical'} Round completed`}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
+                        No Sessions Yet
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
+                        Simulate live technical & HR interview rounds with AI.
+                      </p>
+                    </>
+                  )}
                 </div>
                 <button
                   onClick={() => navigate('/mock-interview')}
                   className="w-full py-2.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs"
                 >
-                  View Details
+                  {upcomingInterview?.status === 'active' ? 'Resume Session' : 'Start Mock Interview'}
                 </button>
               </div>
 
               {/* Card 4: Roadmap Progress */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4">
+              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
                 <div>
                   <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center mb-3">
                     <Sparkles className="w-5 h-5 text-[#6C47FF]" />
                   </div>
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                    Roadmap Progress
+                    Study Planner Progress
                   </span>
-                  <h3 className="text-sm font-extrabold text-emerald-600 leading-snug">
-                    Week 3 Unlocked
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-2 font-medium">
-                    Continue learning and stay on track.
-                  </p>
+                  {tasks.length > 0 ? (
+                    <>
+                      <h3 className="text-sm font-extrabold text-emerald-600 leading-snug">
+                        {completedTasksCount} of {tasks.length} Completed
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
+                        {tasks.length - completedTasksCount > 0
+                          ? `${tasks.length - completedTasksCount} pending tasks in your roadmap.`
+                          : 'All scheduled tasks completed! Great work.'}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
+                        Plan Your Roadmap
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
+                        Create study tasks and milestone roadmaps to ace placements.
+                      </p>
+                    </>
+                  )}
                 </div>
                 <button
                   onClick={() => navigate('/study-planner')}
                   className="w-full py-2.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs"
                 >
-                  Continue Learning
+                  {tasks.length > 0 ? 'Continue Learning' : 'Create Study Plan'}
                 </button>
               </div>
 
-            </div>
-          </div>
-
-          {/* ── REAL-TIME METRICS & DSA PROGRESS ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Card 1: DSA Progress */}
-            <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-[#6C47FF] flex items-center justify-center shrink-0">
-                <Code2 className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                  DSA Solved
-                </span>
-                <h3 className="text-2xl font-black text-[#1A1A2E] mt-0.5">
-                  {analytics.dsaProgress || 0} <span className="text-xs font-semibold text-gray-400">problems</span>
-                </h3>
-                <Link to="/dsa-tracker" className="text-xs text-[#6C47FF] font-bold hover:underline mt-1 inline-block">
-                  Go to DSA Tracker →
-                </Link>
-              </div>
-            </div>
-
-            {/* Card 2: Readiness Score */}
-            <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                <Target className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                  Readiness Score
-                </span>
-                <h3 className="text-2xl font-black text-[#1A1A2E] mt-0.5">
-                  {analytics.readinessScore || 0}%
-                </h3>
-                <Link to="/analytics" className="text-xs text-[#6C47FF] font-bold hover:underline mt-1 inline-block">
-                  View Analytics →
-                </Link>
-              </div>
-            </div>
-
-            {/* Card 3: Study Hours */}
-            <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                <Clock className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                  Study Hours
-                </span>
-                <h3 className="text-2xl font-black text-[#1A1A2E] mt-0.5">
-                  {analytics.studyHours && analytics.studyHours >= 1 ? (
-                    <>
-                      {analytics.studyHours} <span className="text-xs font-semibold text-gray-400">mins</span>
-                    </>
-                  ) : (
-                    <>
-                      {analytics.totalMinutes || 0} <span className="text-xs font-semibold text-gray-400">mins</span>
-                    </>
-                  )}
-                </h3>
-                <span className="text-xs text-gray-400 font-medium mt-1 block">Live timer tracking</span>
-              </div>
-            </div>
-
-            {/* Card 4: Current Streak */}
-            <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-500 flex items-center justify-center shrink-0">
-                <Flame className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                  Current Streak
-                </span>
-                <h3 className="text-2xl font-black text-[#1A1A2E] mt-0.5">
-                  {analytics.currentStreak || 0} <span className="text-xs font-semibold text-gray-400">days</span>
-                </h3>
-                <span className="text-xs text-gray-400 font-medium mt-1 block">Keep it up! 🔥</span>
-              </div>
             </div>
           </div>
 
@@ -395,14 +410,14 @@ const DashboardPage = () => {
                         DSA Practice
                       </span>
                       <span className="text-xs font-extrabold text-[#1A1A2E]">
-                        {upcomingDSA.length > 0 ? `${upcomingDSA.length} Pending Problems` : 'DSA Queue'}
+                        {pendingDSA.length > 0 ? `${pendingDSA.length} Pending Problems` : `${questions.length} Problems Logged`}
                       </span>
                     </div>
                   </div>
 
-                  {upcomingDSA.length > 0 ? (
+                  {pendingDSA.length > 0 ? (
                     <div className="space-y-2 mt-3 divide-y divide-gray-100">
-                      {upcomingDSA.slice(0, 2).map((q, idx) => (
+                      {pendingDSA.slice(0, 2).map((q, idx) => (
                         <div key={q._id || idx} className={idx > 0 ? 'pt-2' : ''}>
                           <h3 className="text-xs font-black text-[#1A1A2E] truncate">
                             {q.title}
@@ -416,7 +431,7 @@ const DashboardPage = () => {
                   ) : (
                     <div className="mt-3 space-y-1">
                       <h3 className="text-xs font-bold text-gray-700">
-                        No upcoming DSA tasks.
+                        {questions.length > 0 ? 'All pending DSA problems completed!' : 'No upcoming DSA tasks.'}
                       </h3>
                       <p className="text-[11px] text-gray-500 font-medium">
                         Add target DSA problems to your tracker.
@@ -489,18 +504,10 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          {/* ── LIVE STUDY TIMER & STATS (Functional backend tracking kept intact) ── */}
-          <div className="bg-white rounded-3xl p-6 border border-purple-100 shadow-xs space-y-4">
-            <h3 className="text-sm font-extrabold text-[#1A1A2E] flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#6C47FF]" /> Study Tracker & Live Analytics
-            </h3>
-            <StudyTimer onSessionChange={fetchData} />
-          </div>
-
         </main>
       </div>
 
-      {/* AI Recommendation Modal */}
+      {/* AI Recommendation Modal (Dynamic) */}
       {showRecModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
           <div className="bg-white border border-purple-100 rounded-3xl max-w-lg w-full p-6 shadow-xl space-y-5 animate-fade-in">
@@ -510,18 +517,18 @@ const DashboardPage = () => {
               </div>
               <div>
                 <span className="text-xs font-black uppercase text-[#6C47FF] tracking-wider">AI Recommendation Plan</span>
-                <h3 className="text-xl font-black text-[#1A1A2E] mt-0.5">Focus on Graphs & Tree Data Structures</h3>
+                <h3 className="text-xl font-black text-[#1A1A2E] mt-0.5">{aiRec.modalTitle}</h3>
               </div>
             </div>
 
             <div className="space-y-3 text-xs text-slate-700 leading-relaxed bg-purple-50/60 p-4 rounded-2xl border border-purple-100">
               <p className="font-semibold text-slate-900">
-                Based on your recent problem activity and targeted role:
+                Actionable roadmap based on your current preparation status:
               </p>
               <ul className="space-y-2 list-disc list-inside text-gray-600">
-                <li>Solve 5 Graph Traversal problems (BFS & DFS).</li>
-                <li>Review Topological Sorting & Shortest Path (Dijkstra's Algorithm).</li>
-                <li>Practice 2 Medium LeetCode Graph interview questions.</li>
+                {aiRec.modalPoints.map((point, index) => (
+                  <li key={index}>{point}</li>
+                ))}
               </ul>
             </div>
 
@@ -533,10 +540,13 @@ const DashboardPage = () => {
                 Close
               </button>
               <button
-                onClick={() => { setShowRecModal(false); navigate('/dsa-tracker'); }}
+                onClick={() => {
+                  setShowRecModal(false);
+                  navigate(aiRec.actionPath);
+                }}
                 className="px-6 py-2.5 rounded-2xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-sm"
               >
-                Open DSA Practice →
+                {aiRec.actionLabel} →
               </button>
             </div>
           </div>
@@ -549,3 +559,4 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+

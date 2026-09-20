@@ -15,7 +15,6 @@ import {
   X, 
   Loader2, 
   Save,
-  Send,
   HelpCircle,
   BookOpen,
   Target,
@@ -364,32 +363,6 @@ const NotesPage = () => {
                 </button>
               </div>
 
-              {/* Natural Language Question Input */}
-              <div className="space-y-2 shrink-0">
-                <div className="relative">
-                  <textarea
-                    rows="2"
-                    placeholder="Ask any question in English, Hindi/Hinglish (e.g. 'Badi apps millions of users kaise handle karti h?', 'Database slow ho jaye to kya kare?', 'Explain this concept simply')..."
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleAIAction();
-                      }
-                    }}
-                    className="w-full p-3 pr-12 rounded-2xl border border-purple-200 text-xs text-[#1A1A2E] outline-none focus:border-[#6C47FF] transition-all resize-none"
-                  />
-                  <button
-                    onClick={() => handleAIAction()}
-                    disabled={isGenerating || !customPrompt.trim()}
-                    className="absolute right-3 bottom-3 p-2 rounded-xl bg-[#6C47FF] text-white disabled:opacity-40 hover:bg-[#5A36EC] transition-all cursor-pointer"
-                  >
-                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
               {/* Quick Intent Action Pills — 3 Modes Only */}
               <div className="flex flex-wrap gap-2 shrink-0">
                 <button 
@@ -428,7 +401,7 @@ const NotesPage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8 text-xs text-gray-400 font-medium">
-                    Type any technical question above or select an AI action pill to generate structured notes.
+                    Select an AI action pill above to generate structured notes.
                   </div>
                 )}
               </div>

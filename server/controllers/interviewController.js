@@ -12,19 +12,35 @@ const normalizeDomain = (input = '') => {
   const lower = clean.toLowerCase();
 
   const domainMap = {
+    'technical': 'General Technical',
+    'general technical': 'General Technical',
+    'core technical': 'General Technical',
+    'general': 'General Technical',
+    'technical round': 'General Technical',
+    'technical interview': 'General Technical',
+    'technical technical': 'General Technical',
+    'general technical / core cs': 'General Technical',
+    'data structures & algorithms (dsa)': 'Data Structures & Algorithms',
     'java dsa': 'Java Data Structures & Algorithms',
     'cpp dsa': 'C++ Data Structures & Algorithms',
     'c++ dsa': 'C++ Data Structures & Algorithms',
     'python dsa': 'Python Data Structures & Algorithms',
     'dsa': 'Data Structures & Algorithms',
-    'react': 'React.js Development',
-    'reactjs': 'React.js Development',
-    'react.js': 'React.js Development',
-    'node': 'Node.js Backend Development',
-    'nodejs': 'Node.js Backend Development',
-    'node.js': 'Node.js Backend Development',
-    'mern': 'MERN Stack Development',
-    'mean': 'MEAN Stack Development',
+    'java': 'Java',
+    'c++': 'C++',
+    'cpp': 'C++',
+    'python': 'Python',
+    'javascript': 'JavaScript',
+    'js': 'JavaScript',
+    'react': 'React.js',
+    'reactjs': 'React.js',
+    'react.js': 'React.js',
+    'node': 'Node.js',
+    'nodejs': 'Node.js',
+    'node.js': 'Node.js',
+    'mern': 'MERN Stack',
+    'mern stack': 'MERN Stack',
+    'mean': 'MEAN Stack',
     'fullstack': 'Full Stack Development',
     'full stack': 'Full Stack Development',
     'web dev': 'Web Development',
@@ -32,34 +48,70 @@ const normalizeDomain = (input = '') => {
     'os': 'Operating Systems',
     'operating system': 'Operating Systems',
     'operating systems': 'Operating Systems',
+    'operating systems (os)': 'Operating Systems',
     'dbms': 'Database Management Systems',
-    'sql': 'Database & SQL Queries',
+    'database management systems (dbms)': 'Database Management Systems',
+    'sql': 'Database & SQL',
+    'mysql': 'MySQL Database',
     'cn': 'Computer Networks',
     'computer networks': 'Computer Networks',
+    'computer networks (cn)': 'Computer Networks',
     'oop': 'Object-Oriented Programming',
     'oops': 'Object-Oriented Programming',
-    'ai': 'Artificial Intelligence & Machine Learning',
+    'object-oriented programming (oops)': 'Object-Oriented Programming',
+    'ai': 'Artificial Intelligence',
     'ml': 'Machine Learning',
     'ai/ml': 'AI & Machine Learning',
-    'hr': 'Behavioral & HR Round',
-    'behavioral': 'Behavioral & HR Round',
+    'artificial intelligence': 'Artificial Intelligence',
+    'machine learning': 'Machine Learning',
+    'deep learning': 'Deep Learning',
+    'data science': 'Data Science',
+    'cloud computing': 'Cloud Computing',
+    'devops': 'DevOps',
+    'cyber security': 'Cyber Security',
+    'hr': 'HR & Behavioral',
+    'behavioral': 'HR & Behavioral',
+    'hr & behavioral': 'HR & Behavioral',
+    'behavioral & hr round': 'HR & Behavioral',
     'aptitude': 'Quantitative Aptitude & Reasoning',
-    'system design': 'System Design Architecture',
+    'system design': 'System Design',
+    'system design architecture': 'System Design',
+    'scalable web applications': 'Scalable Web Applications',
+    'distributed systems': 'Distributed Systems',
+    'database design': 'Database Design',
+    'api design': 'API Design',
+    'microservices architecture': 'Microservices Architecture',
+    'cloud architecture': 'Cloud Architecture',
+    'caching strategies': 'Caching Strategies',
+    'load balancing': 'Load Balancing',
+    'real-time systems': 'Real-time Systems',
+    'notification systems': 'Notification Systems',
+    'e-commerce system design': 'E-commerce System Design',
+    'social media system design': 'Social Media System Design'
   };
 
   if (domainMap[lower]) {
     return domainMap[lower];
   }
 
-  // Fallback: Professional Title Case conversion for unrecognized inputs
-  return lower.split(' ').map(word => {
-    if (word === 'js') return 'JS';
-    if (word === 'api' || word === 'apis') return 'APIs';
-    if (word === 'ui' || word === 'ux') return word.toUpperCase();
-    if (word === 'dsa') return 'DSA';
-    if (word === 'qa') return 'QA';
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  // Fallback: Title case conversion and removal of redundant parenthesized tags
+  return clean
+    .replace(/\s+(Technical\s+)?Interview$/i, '')
+    .split(' ')
+    .map(word => {
+      const w = word.toLowerCase();
+      if (w === 'js') return 'JS';
+      if (w === 'api' || w === 'apis') return 'APIs';
+      if (w === 'ui' || w === 'ux') return w.toUpperCase();
+      if (w === 'dsa') return 'DSA';
+      if (w === 'qa') return 'QA';
+      if (w === 'sql') return 'SQL';
+      if (w === 'dbms') return 'DBMS';
+      if (w === 'os') return 'OS';
+      if (w === 'cn') return 'CN';
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
 };
 
 // @desc    Start mock interview session and get domain-specific introduction question
@@ -72,53 +124,65 @@ exports.startInterview = asyncHandler(async (req, res) => {
     return res.status(400).json(errorResponse('Interview type and topic are required.'));
   }
 
-  const apiKey = process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'your_key_here' || apiKey.startsWith('gsk_your_')) {
-    console.warn(`⚠️ Groq AI API key missing or unconfigured for interview. Activating Recruiter Fallback Engine for domain: "${normalizedTopic}"`);
-    const initialQuestion = generateMockRecruiterFallback(`Domain / Focus Topic: ${normalizedTopic}, instructions for introduction`);
-    const newSession = await InterviewSession.create({
-      user: req.user.id,
-      type,
-      topic: normalizedTopic,
-      targetRole: targetRole || 'Software Engineering Candidate',
-      messages: [{ sender: 'interviewer', text: initialQuestion }],
-      currentQuestionIndex: 1,
-      status: 'active',
-    });
-    return res.status(201).json(successResponse({
-      sessionId: newSession._id,
-      initialQuestion,
-      type,
-      topic: normalizedTopic,
-      targetRole: newSession.targetRole,
-    }, 'Interview session initialized (Recruiter Fallback Mode).'));
-  }
-
   const normalizedTopic = normalizeDomain(topic);
   const isBehavioral = type === 'Behavioral';
   const isSystemDesign = type === 'System Design';
-  const roundTitle = isBehavioral 
-    ? 'HR & Behavioral Interview' 
-    : isSystemDesign 
-    ? 'System Design Interview' 
-    : `${normalizedTopic} Technical Interview`;
+
+  let roundTitle;
+  if (isBehavioral) {
+    roundTitle = 'HR & Behavioral Interview';
+  } else if (isSystemDesign) {
+    roundTitle = (normalizedTopic && !['System Design', 'System Design Architecture', 'General'].includes(normalizedTopic))
+      ? `${normalizedTopic} System Design Interview`
+      : 'System Design Interview';
+  } else {
+    const isGeneralTech = !normalizedTopic || 
+      normalizedTopic.toLowerCase() === 'technical' || 
+      normalizedTopic.toLowerCase() === 'general technical' || 
+      normalizedTopic.toLowerCase() === 'core technical' || 
+      normalizedTopic.toLowerCase() === 'general';
+    if (isGeneralTech) {
+      roundTitle = 'Technical Interview';
+    } else if (normalizedTopic.toLowerCase().endsWith('interview')) {
+      roundTitle = normalizedTopic;
+    } else {
+      roundTitle = `${normalizedTopic} Technical Interview`;
+    }
+  }
+
+  const isGeneral = !normalizedTopic || ['technical', 'general technical', 'core technical', 'general'].includes(normalizedTopic.toLowerCase());
+  const experienceTarget = isGeneral ? 'in software development and computer science' : `with ${normalizedTopic}`;
+
+  const apiKey = process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'your_key_here' || apiKey.startsWith('gsk_your_')) {
+    console.warn(`⚠️ Groq AI API key missing or unconfigured for interview. Activating Recruiter Fallback Engine for domain: "${normalizedTopic}"`);
+    const initialQuestion = generateMockRecruiterFallback(`Domain / Focus Topic: ${normalizedTopic}, opening message, instructions for introduction`);
+    const newSession = await Interview.create({
+      user: req.user.id,
+      type,
+      topic: normalizedTopic,
+      messages: [{ role: 'assistant', content: initialQuestion }],
+      status: 'active',
+    });
+    return res.status(201).json(successResponse(newSession, 'Interview session initialized (Recruiter Fallback Mode).'));
+  }
 
   // Dynamic 4-Part MNC Interviewer Opening Templates
   const TECHNICAL_TEMPLATES = [
     {
       welcome: `Welcome to your ${roundTitle}.`,
       flow: `We'll start with a brief introduction and then move into technical questions and domain problem-solving.`,
-      question: `To begin, please introduce yourself and share your programming journey and experience with ${normalizedTopic}.`
+      question: `To begin, please introduce yourself and share your programming journey and experience ${experienceTarget}.`
     },
     {
       welcome: `Glad to have you here for your ${roundTitle}.`,
       flow: `We'll open with a quick introduction before diving into technical discussion and scenario-based questions.`,
-      question: `Could you start by introducing yourself and walking me through your background with ${normalizedTopic}?`
+      question: `Could you start by introducing yourself and walking me through your background ${experienceTarget}?`
     },
     {
       welcome: `Welcome! I'll be conducting your ${roundTitle} today.`,
       flow: `Our format begins with a short introduction followed by domain-specific technical questions.`,
-      question: `Please introduce yourself and share a brief overview of your journey with ${normalizedTopic}.`
+      question: `Please introduce yourself and share a brief overview of your journey ${experienceTarget}.`
     }
   ];
 
@@ -220,27 +284,39 @@ Normalized Focus Domain: ${normalizedTopic}
 INSTRUCTIONS FOR OPENING MESSAGE:
 Construct a concise, natural 4-part opening message following this EXACT structure:
 
-1. WELCOME MESSAGE: State "${selectedTemplate.welcome}" (Always use "Technical Interview" for technical domains; never use words like "Assessment" or "Session").
+1. WELCOME MESSAGE: State "${selectedTemplate.welcome}" (Never repeat words like "Technical Technical" or "Assessment").
 2. BRIEF EVALUATION STATEMENT: State what skills will be evaluated based on the focus domain "${normalizedTopic}":
    - For Data Structures & Algorithms (DSA): Mention data structures, algorithms, problem-solving approach, coding ability, and time and space complexity analysis.
    - For Java: Mention Core Java, OOP concepts, Collections framework, Exception handling, and problem solving.
    - For C++: Mention C++ fundamentals, STL, memory management, OOP, and performance considerations.
+   - For Python: Mention Python syntax, data structures, OOP, decorators, and practical problem solving.
    - For MySQL / DBMS: Mention SQL queries, database design, indexing, transactions, and query optimization.
    - For React.js: Mention components, hooks, state management, and performance optimization.
    - For Node.js: Mention APIs, backend architecture, authentication, and database integration.
    - For Machine Learning / AI: Mention ML concepts, algorithms, model evaluation, and practical implementation.
+   - For General Technical: Mention core computer science concepts, problem-solving approach, and programming fundamentals.
 3. INTERVIEW FLOW STATEMENT: Include a clear process statement (e.g. "${selectedTemplate.flow}").
 4. SINGLE INTRO QUESTION: Ask ONLY ONE natural introduction question (e.g. "${selectedTemplate.question}"). Do NOT ask multiple questions.
 
 CRITICAL RULES:
-- NEVER use words like "Assessment", "Session", "Exam", or "Test Platform".
+- NEVER repeat words (e.g., NEVER say "Technical Technical Interview" or "depth in Technical").
+- NEVER use words like "Assessment", "Exam", or "Test Platform".
 - NEVER use robotic phrases like "Today, we'll delve into...", "I'm excited to connect with you today", or "background relevant to...".
-- NEVER display raw user input or repetitive domain names.
 - Keep total length concise (3-4 natural sentences). Output ONLY the interviewer dialogue directly without preambles or markdown backticks.
 `;
     }
 
-    const firstQuestion = await callGeminiWithRetry(prompt, { maxAttempts: 3, timeoutMs: 15000, fallbackType: 'interview' });
+    let firstQuestion;
+    try {
+      firstQuestion = await callGeminiWithRetry(prompt, { maxAttempts: 3, timeoutMs: 15000, fallbackType: 'interview' });
+    } catch (err) {
+      console.warn('AI call for firstQuestion failed, using fallback:', err.message);
+      firstQuestion = generateMockRecruiterFallback(`Domain / Focus Topic: ${normalizedTopic}, opening message, instructions for introduction`);
+    }
+
+    if (!firstQuestion || !firstQuestion.trim()) {
+      firstQuestion = generateMockRecruiterFallback(`Domain / Focus Topic: ${normalizedTopic}, opening message, instructions for introduction`);
+    }
 
     const interview = await Interview.create({
       user: req.user.id,
@@ -333,7 +409,17 @@ Instructions for your response:
 `;
 
     // 2. Generate next interviewer question with fallback support
-    const nextQuestion = await callGeminiWithRetry(prompt, { maxAttempts: 1, timeoutMs: 8000, fallbackType: 'interview' });
+    let nextQuestion;
+    try {
+      nextQuestion = await callGeminiWithRetry(prompt, { maxAttempts: 2, timeoutMs: 12000, fallbackType: 'interview' });
+    } catch (aiErr) {
+      console.warn('AI call in submitResponse failed, using fallback question:', aiErr.message);
+      nextQuestion = generateMockRecruiterFallback(`Domain / Focus Topic: ${interview.topic}, candidate answered question ${assistantQuestionsCount}`);
+    }
+
+    if (!nextQuestion || !nextQuestion.trim()) {
+      nextQuestion = generateMockRecruiterFallback(`Domain / Focus Topic: ${interview.topic}, candidate answered question ${assistantQuestionsCount}`);
+    }
 
     interview.messages.push({ role: 'assistant', content: nextQuestion.trim() });
     await interview.save();
@@ -341,7 +427,6 @@ Instructions for your response:
     res.status(200).json(successResponse(interview, 'Response submitted successfully.'));
   } catch (error) {
     console.error('Submit Response Error:', error.message);
-    // User message is already safely saved in MongoDB Atlas!
     res.status(500).json(errorResponse(error.message || 'Error processing recruiter response.'));
   }
 });
@@ -607,4 +692,12 @@ exports.deleteInterview = asyncHandler(async (req, res) => {
   }
   await interview.deleteOne();
   res.status(200).json(successResponse(null, 'Interview session deleted successfully.'));
+});
+
+// @desc    Clear all past mock interview sessions for user
+// @route   DELETE /api/interviews/clear-all
+// @access  Private
+exports.clearAllInterviews = asyncHandler(async (req, res) => {
+  await Interview.deleteMany({ user: req.user.id });
+  res.status(200).json(successResponse(null, 'All mock interview sessions cleared successfully.'));
 });

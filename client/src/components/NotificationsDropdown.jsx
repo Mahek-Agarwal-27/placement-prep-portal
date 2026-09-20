@@ -83,6 +83,16 @@ const NotificationsDropdown = () => {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!window.confirm('Are you sure you want to clear all notifications?')) return;
+    try {
+      await notificationService.clearAll();
+      setNotifications([]);
+    } catch (err) {
+      console.error('Failed to clear all notifications:', err);
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell Button Trigger */}
@@ -119,16 +129,28 @@ const NotificationsDropdown = () => {
               )}
             </div>
 
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="text-[11px] font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                title="Mark all as read"
-              >
-                <CheckCheck className="w-3.5 h-3.5" /> Read all
-              </button>
-            )}
+            <div className="flex items-center gap-2.5">
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-[11px] font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                  title="Mark all as read"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" /> Read all
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="text-[11px] font-medium text-rose-600 hover:text-rose-700 flex items-center gap-1 transition-colors"
+                  title="Clear all notifications"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Clear all
+                </button>
+              )}
+            </div>
           </div>
+
 
           {/* List */}
           <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">

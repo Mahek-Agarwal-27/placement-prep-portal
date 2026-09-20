@@ -157,25 +157,50 @@ exports.analyzeResume = asyncHandler(async (req, res) => {
     const pdfData = await pdfParse(dataBuffer);
     const resumeText = pdfData.text;
 
-    // 2. Build Prompt for Gemini (optimized for maximum speed & minimal tokens)
+    // 2. Build Prompt for AI
     const prompt = `
-You are a technical recruiter. Analyze the candidate resume text ${jobDescription ? 'against the target Job Description' : ''} and output ONLY a raw JSON string matching this schema:
+You are an expert technical recruiter and ATS resume evaluator.
+Analyze the candidate resume text ${jobDescription ? 'against the provided target Job Description' : 'for software engineering and technical roles'} and output ONLY a raw JSON string matching this exact schema:
 {
   "feedback": {
-    "keywordMatching": ["Max 2 short items describing keyword gaps/suggestions"],
-    "formatting": ["Max 2 short items about formatting or section layout"],
-    "bulletPoints": ["Max 2 short rewrite examples of bullet points to increase impact"],
-    "generalAdvice": "A single short sentence summarizing the feedback"
+    "generalAdvice": "<Objective, concise 2-3 sentence executive summary of the candidate's core background, key technical profile, and overall resume strength based strictly on the uploaded resume. Do NOT invent facts or background>",
+    "keywordMatching": [
+      "<Key technical skill or technology present in the resume and how it adds value>",
+      "<Another relevant technology or tool identified in the resume>"
+    ],
+    "missingKeywords": [
+      "<Important missing skill, framework, or industry-standard keyword relevant to the candidate's domain or target role that could be added>",
+      "<Another recommended relevant keyword>"
+    ],
+    "bulletPoints": [
+      {
+        "original": "<A specific bullet point from the candidate's projects or experience>",
+        "improved": "<Strengthened version starting with an impactful action verb and highlighting technical execution. CRITICAL RULE: Add measurable metrics ONLY IF already present in the original resume. NEVER invent fake percentages, accuracy numbers, or fabricated metrics>"
+      }
+    ],
+    "formatting": [
+      "<Specific observation regarding contact info, consistent date formatting, section organization, redundancy, or ATS readability>"
+    ],
+    "actionItems": [
+      "<Specific change 1 the user should make to improve their resume>",
+      "<Specific change 2 the user should make>",
+      "<Specific change 3 the user should make>"
+    ]
   }
 }
-Keep points extremely concise, direct, and actionable. Do not use markdown backticks or block wrappers.
+
+CRITICAL RULES:
+1. Base all analysis strictly on the actual uploaded resume. NEVER invent or fabricate facts, metrics, accuracy percentages, latency improvements, user numbers, or achievements that do not exist in the resume text.
+2. For missingKeywords: Only suggest relevant, realistic keywords for the role/domain. Do not generate random unrelated skills.
+3. Keep points concise, actionable, and professional.
+4. Output STRICT JSON only. Do not use markdown backticks or wrappers.
 
 ${jobDescription ? `\n--- TARGET JOB DESCRIPTION ---\n${jobDescription}\n` : ''}
 --- CANDIDATE RESUME ---
 ${resumeText}
 `;
 
-    // 3. Call Gemini with 3 attempts and exponential backoff
+    // 3. Call AI with 3 attempts and exponential backoff
     const responseText = await callGeminiWithRetry(prompt, { maxAttempts: 3, timeoutMs: 25000, fallbackType: 'resume' });
     
     // Clean up response if it contains markdown formatting
@@ -186,7 +211,7 @@ ${resumeText}
     try {
       aiAnalysis = JSON.parse(cleanedJsonText);
     } catch (parseError) {
-      console.error('Failed to parse Gemini JSON:', cleanedJsonText);
+      console.error('Failed to parse Resume JSON:', cleanedJsonText);
       return res.status(500).json(errorResponse('AI returned an invalid format. Please try again.'));
     }
 
@@ -200,11 +225,13 @@ ${resumeText}
       fileUrl,
       jobDescription: jobDescription || '',
       atsScore: finalScore,
-      feedback: aiAnalysis.feedback || {
-        keywordMatching: [],
-        formatting: [],
-        bulletPoints: [],
-        generalAdvice: '',
+      feedback: {
+        generalAdvice: aiAnalysis.feedback?.generalAdvice || '',
+        keywordMatching: aiAnalysis.feedback?.keywordMatching || [],
+        missingKeywords: aiAnalysis.feedback?.missingKeywords || [],
+        bulletPoints: aiAnalysis.feedback?.bulletPoints || [],
+        formatting: aiAnalysis.feedback?.formatting || [],
+        actionItems: aiAnalysis.feedback?.actionItems || []
       },
     });
 
@@ -268,4 +295,21 @@ exports.deleteResume = asyncHandler(async (req, res) => {
 
   await resume.deleteOne();
   res.status(200).json(successResponse(null, 'Resume deleted successfully'));
+});
+
+// @desc    Clear all past resume analyses for user
+// @route   DELETE /api/resumes/clear-all
+// @access  Private
+exports.clearAllResumes = asyncHandler(async (req, res) => {
+  const resumes = await Resume.find({ user: req.user.id });
+  for (const resume of resumes) {
+    if (resume.fileUrl) {
+      const filePath = path.join(__dirname, '..', resume.fileUrl);
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (e) {}
+      }
+    }
+  }
+  await Resume.deleteMany({ user: req.user.id });
+  res.status(200).json(successResponse(null, 'All resume scans cleared successfully'));
 });

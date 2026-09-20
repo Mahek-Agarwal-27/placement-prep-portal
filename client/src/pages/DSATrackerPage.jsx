@@ -230,6 +230,15 @@ const DSATrackerPage = () => {
     } catch (_) {}
   };
 
+  const handleClearAll = async () => {
+    if (!window.confirm('Are you sure you want to clear ALL logged DSA problems?')) return;
+    try {
+      await questionService.clearAll();
+      fetchQuestions();
+      fetchStats();
+    } catch (_) {}
+  };
+
   // Compute topic progress percentages dynamically from logged questions
   const DEFAULT_TOPICS = ['Arrays', 'Strings', 'Linked List', 'Trees', 'Graphs', 'Dynamic Programming'];
   
@@ -277,12 +286,23 @@ const DSATrackerPage = () => {
               </p>
             </div>
 
-            <button 
-              onClick={() => { setEditTarget(null); setModalOpen(true); }}
-              className="px-6 py-3 rounded-2xl bg-[#6C47FF] text-white font-bold text-sm hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> Log Problem
-            </button>
+            <div className="flex items-center gap-3">
+              {questions.length > 0 && (
+                <button 
+                  onClick={handleClearAll}
+                  className="px-4 py-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-100 transition-all flex items-center gap-1.5 cursor-pointer"
+                  title="Clear all DSA questions"
+                >
+                  <Trash2 className="w-4 h-4" /> Clear All
+                </button>
+              )}
+              <button 
+                onClick={() => { setEditTarget(null); setModalOpen(true); }}
+                className="px-6 py-3 rounded-2xl bg-[#6C47FF] text-white font-bold text-sm hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Log Problem
+              </button>
+            </div>
           </div>
 
         {/* Stats Row */}

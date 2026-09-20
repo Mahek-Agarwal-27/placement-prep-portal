@@ -8,6 +8,7 @@ const {
   getInterviews,
   getInterviewById,
   deleteInterview,
+  clearAllInterviews,
 } = require('../controllers/interviewController');
 
 router.use(protect);
@@ -17,6 +18,8 @@ router.route('/')
 
 router.route('/start')
   .post(startInterview);
+
+router.delete('/clear-all', clearAllInterviews);
 
 router.route('/:id')
   .get(getInterviewById)

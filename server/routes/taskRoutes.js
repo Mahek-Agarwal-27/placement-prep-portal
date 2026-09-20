@@ -21,6 +21,7 @@ const {
   deleteTask,
   getTaskStats,
   getUpcomingSession,
+  clearAllTasks,
 } = require('../controllers/taskController');
 
 // All routes require authentication
@@ -30,9 +31,10 @@ router.route('/')
   .get(getTasks)
   .post(addTask);
 
-// Stats & Upcoming routes — must be BEFORE /:id
+// Stats, Upcoming & Clear-all routes — must be BEFORE /:id
 router.get('/stats', getTaskStats);
 router.get('/upcoming', getUpcomingSession);
+router.delete('/clear-all', clearAllTasks);
 
 router.route('/:id')
   .put(updateTask)

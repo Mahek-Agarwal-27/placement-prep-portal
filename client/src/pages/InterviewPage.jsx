@@ -22,6 +22,7 @@ import {
 // Predefined Topics Lists
 const TECHNICAL_TOPICS = [
   'Data Structures & Algorithms (DSA)',
+  'General Technical / Core CS',
   'Java',
   'C++',
   'Python',
@@ -62,6 +63,7 @@ const SYSTEM_DESIGN_TOPICS = [
 ];
 
 const InterviewPage = () => {
+  const { user } = useAuth();
   const [type, setType] = useState('Technical');
   const [selectedTopic, setSelectedTopic] = useState('Data Structures & Algorithms (DSA)');
   const [customTopic, setCustomTopic] = useState('');
@@ -108,18 +110,53 @@ const InterviewPage = () => {
   const fetchHistory = async () => {
     try {
       const res = await interviewService.getInterviews();
-      if (res.success) {
-        setHistory(res.data || []);
+      if (res && res.success && Array.isArray(res.data)) {
+        setHistory(res.data);
+        return res.data;
       }
     } catch (e) {
       console.error('Failed to fetch interview history:', e);
     } finally {
       setLoadingHistory(false);
     }
+    return [];
   };
 
   useEffect(() => {
-    fetchHistory();
+    const initPage = async () => {
+      setLoadingHistory(true);
+      const pastSessions = await fetchHistory();
+      
+      // Check if there was an active session before reload
+      const savedSessionId = sessionStorage.getItem('hirenova_active_interview_id');
+      if (savedSessionId) {
+        const found = pastSessions.find(s => s._id === savedSessionId);
+        if (found) {
+          setActiveSession(found);
+          try {
+            const detail = await interviewService.getInterviewById(savedSessionId);
+            if (detail && detail.success && detail.data) {
+              setActiveSession(detail.data);
+            }
+          } catch (e) {
+            console.warn('Could not refresh saved session detail:', e);
+          }
+        } else {
+          try {
+            const detail = await interviewService.getInterviewById(savedSessionId);
+            if (detail && detail.success && detail.data) {
+              setActiveSession(detail.data);
+            } else {
+              sessionStorage.removeItem('hirenova_active_interview_id');
+            }
+          } catch {
+            sessionStorage.removeItem('hirenova_active_interview_id');
+          }
+        }
+      }
+    };
+
+    initPage();
   }, []);
 
   useEffect(() => {
@@ -154,11 +191,14 @@ const InterviewPage = () => {
         type,
         topic: effectiveTopic,
       });
-      if (res.success && res.data) {
+      if (res && res.success && res.data) {
         setActiveSession(res.data);
+        if (res.data._id) {
+          sessionStorage.setItem('hirenova_active_interview_id', res.data._id);
+        }
         fetchHistory();
       } else {
-        setError(res.message || 'Failed to start interview session.');
+        setError(res?.message || 'Failed to start interview session.');
       }
     } catch (e) {
       const serverErr = e.response?.data?.message || e.message || 'Failed to start interview session.';
@@ -169,44 +209,57 @@ const InterviewPage = () => {
   };
 
   const handleSendMessage = async (e) => {
-    if (e) {
+    if (e && typeof e.preventDefault === 'function') {
       e.preventDefault();
       e.stopPropagation();
     }
     
-    if (!inputMessage.trim() || isSending || !activeSession || activeSession.status !== 'active') {
+    const userMsg = inputMessage.trim();
+    if (!userMsg || isSending || !activeSession || !activeSession._id || activeSession.status !== 'active') {
       return;
     }
 
-    const userMsg = inputMessage.trim();
+    const currentSessionId = activeSession._id;
     setInputMessage('');
     setIsSending(true);
     setError('');
 
-    // Optimistically push user message into active session
+    // Optimistically push user message into active session using functional state update
     setActiveSession((prev) => {
       if (!prev) return prev;
-      const currentMsgs = prev.messages || [];
+      const currentMsgs = Array.isArray(prev.messages) ? prev.messages : [];
       return {
         ...prev,
-        messages: [...currentMsgs, { role: 'user', content: userMsg, timestamp: new Date().toISOString() }]
+        messages: [
+          ...currentMsgs, 
+          { 
+            role: 'user', 
+            content: userMsg, 
+            createdAt: new Date().toISOString() 
+          }
+        ]
       };
     });
 
     try {
-      const res = await interviewService.respondToInterview(activeSession._id, userMsg);
+      const res = await interviewService.respondToInterview(currentSessionId, userMsg);
       if (res && res.success && res.data) {
         setActiveSession(res.data);
+        if (res.data._id) {
+          sessionStorage.setItem('hirenova_active_interview_id', res.data._id);
+        }
         // Silently sync history in background
         interviewService.getInterviews().then(historyRes => {
-          if (historyRes && historyRes.success) setHistory(historyRes.data || []);
+          if (historyRes && historyRes.success && Array.isArray(historyRes.data)) {
+            setHistory(historyRes.data);
+          }
         }).catch(() => {});
       } else {
-        setError(res?.message || 'Failed to send message.');
+        setError(res?.message || 'Failed to receive recruiter response.');
       }
     } catch (err) {
       console.error('Error sending response:', err);
-      const serverErr = err.response?.data?.message || err.message || 'Failed to send message.';
+      const serverErr = err.response?.data?.message || err.message || 'Failed to send message. Please try again.';
       setError(serverErr);
     } finally {
       setIsSending(false);
@@ -214,9 +267,9 @@ const InterviewPage = () => {
   };
 
   const handleEndInterview = async () => {
-    if (!activeSession || isEnding) return;
+    if (!activeSession || !activeSession._id || isEnding) return;
 
-    const userAnswersCount = (activeSession.messages || []).filter(m => m.role === 'user').length;
+    const userAnswersCount = (activeSession.messages || []).filter(m => m && m.role === 'user').length;
     const maxQuestions = activeSession.type === 'Behavioral' ? 8 : activeSession.type === 'System Design' ? 7 : 10;
 
     if (activeSession.status === 'active' && userAnswersCount < maxQuestions) {
@@ -228,11 +281,12 @@ const InterviewPage = () => {
     setError('');
     try {
       const res = await interviewService.endInterview(activeSession._id);
-      if (res.success && res.data) {
+      if (res && res.success && res.data) {
         setActiveSession(res.data);
+        sessionStorage.removeItem('hirenova_active_interview_id');
         fetchHistory();
       } else {
-        setError(res.message || 'Failed to grade the interview transcript.');
+        setError(res?.message || 'Failed to grade the interview transcript.');
       }
     } catch (e) {
       const serverErr = e.response?.data?.message || e.message || 'Failed to grade the interview transcript.';
@@ -246,17 +300,21 @@ const InterviewPage = () => {
     if (!session || !session._id) return;
     setError('');
     setActiveSession(session);
+    if (session.status === 'active') {
+      sessionStorage.setItem('hirenova_active_interview_id', session._id);
+    } else {
+      sessionStorage.removeItem('hirenova_active_interview_id');
+    }
     setLoadingSession(true);
     try {
       const res = await interviewService.getInterviewById(session._id);
-      if (res.success && res.data) {
+      if (res && res.success && res.data) {
         setActiveSession(res.data);
       } else {
         setError('Interview session not found.');
       }
     } catch (e) {
       console.error('Failed to fetch session detail:', e);
-      // Keep optimistic session or set notice if missing
       if (!session.messages) {
         setError('Interview session not found.');
       }
@@ -266,16 +324,31 @@ const InterviewPage = () => {
   };
 
   const handleDeleteSession = async (e, id) => {
-    e.stopPropagation();
+    if (e && typeof e.stopPropagation === 'function') {
+      e.stopPropagation();
+    }
     if (!window.confirm('Delete this past interview session?')) return;
     try {
       await interviewService.deleteInterview(id);
       if (activeSession?._id === id) {
         setActiveSession(null);
+        sessionStorage.removeItem('hirenova_active_interview_id');
       }
       fetchHistory();
     } catch (err) {
       setError('Failed to delete interview session.');
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL past mock interview sessions?')) return;
+    try {
+      await interviewService.clearAll();
+      setActiveSession(null);
+      sessionStorage.removeItem('hirenova_active_interview_id');
+      fetchHistory();
+    } catch (err) {
+      setError('Failed to clear interview history.');
     }
   };
 
@@ -299,7 +372,18 @@ const InterviewPage = () => {
           </div>
           
           <div className="p-4 flex-1">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Past Interviews</h3>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Past Interviews</h3>
+              {history.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Clear all past interviews"
+                >
+                  <Trash2 className="w-3 h-3" /> Clear All
+                </button>
+              )}
+            </div>
             {loadingHistory ? (
               <div className="flex items-center justify-center py-8 text-xs text-slate-400 gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-blue-600" /> Loading history...
@@ -532,35 +616,42 @@ const InterviewPage = () => {
 
               {/* Chat Message Transcript */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
-                {(activeSession?.messages || []).map((msg, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`flex items-start gap-3 ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} animate-fade-in`}
-                  >
-                    {msg.role === 'assistant' && (
-                      <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-1 shadow-sm">
-                        <Bot className="w-4 h-4" />
-                      </div>
-                    )}
-
-                    <div className={`max-w-[75%] rounded-2xl p-4 text-xs leading-relaxed border shadow-sm ${
-                      msg.role === 'assistant'
-                        ? 'bg-white border-slate-200 text-slate-800 rounded-tl-none'
-                        : 'bg-blue-600 text-white border-blue-600 rounded-tr-none'
-                    }`}>
-                      {msg.role === 'assistant' && (
-                        <p className="text-[10px] text-blue-600 font-semibold uppercase tracking-wider mb-1">AI Recruiter</p>
+                {(activeSession?.messages || []).map((msg, idx) => {
+                  if (!msg) return null;
+                  const isAssistant = msg.role === 'assistant';
+                  const messageText = typeof msg.content === 'string' 
+                    ? msg.content 
+                    : (typeof msg.text === 'string' ? msg.text : String(msg.content || ''));
+                  return (
+                    <div 
+                      key={msg._id || idx} 
+                      className={`flex items-start gap-3 ${isAssistant ? 'justify-start' : 'justify-end'} animate-fade-in`}
+                    >
+                      {isAssistant && (
+                        <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                          <Bot className="w-4 h-4" />
+                        </div>
                       )}
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
 
-                    {msg.role === 'user' && (
-                      <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 mt-1 font-semibold text-xs border border-slate-300">
-                        {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                      <div className={`max-w-[75%] rounded-2xl p-4 text-xs leading-relaxed border shadow-sm ${
+                        isAssistant
+                          ? 'bg-white border-slate-200 text-slate-800 rounded-tl-none'
+                          : 'bg-blue-600 text-white border-blue-600 rounded-tr-none'
+                      }`}>
+                        {isAssistant && (
+                          <p className="text-[10px] text-blue-600 font-semibold uppercase tracking-wider mb-1">AI Recruiter</p>
+                        )}
+                        <p className="whitespace-pre-wrap">{messageText}</p>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {!isAssistant && (
+                        <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 mt-1 font-semibold text-xs border border-slate-300">
+                          {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
                 {isSending && (
                   <div className="flex items-center gap-3 justify-start animate-fade-in">
@@ -657,42 +748,34 @@ const InterviewPage = () => {
 
               {/* Chat Input Bar */}
               {activeSession.status === 'active' && (
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSendMessage(e);
-                  }} 
-                  className="p-4 border-t border-slate-200 bg-white shrink-0"
-                >
-                  <div className="flex gap-2 max-w-4xl mx-auto">
+                <div className="p-4 border-t border-slate-200 bg-white shrink-0">
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSendMessage(e);
+                    }}
+                    className="flex gap-2 max-w-4xl mx-auto"
+                  >
                     <input 
                       type="text" 
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSendMessage(e);
-                        }
-                      }}
                       placeholder="Type your response here... (Press Enter to send)"
                       className="input-field text-xs py-2.5"
                       disabled={isSending}
+                      autoFocus
                     />
                     <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSendMessage(e);
-                      }}
+                      type="submit"
                       disabled={isSending || !inputMessage.trim()}
-                      className="btn-primary px-4 py-2 text-xs shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="btn-primary px-4 py-2 text-xs shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Thinking...</span>
+                        </>
                       ) : (
                         <>
                           <span>Send</span>
@@ -700,8 +783,8 @@ const InterviewPage = () => {
                         </>
                       )}
                     </button>
-                  </div>
-                </form>
+                  </form>
+                </div>
               )}
             </div>
           )}

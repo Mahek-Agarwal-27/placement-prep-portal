@@ -191,3 +191,14 @@ exports.getStats = asyncHandler(async (req, res) => {
     'Stats fetched successfully'
   ));
 });
+
+// @desc    Clear all DSA questions for logged-in user
+// @route   DELETE /api/questions/clear-all
+// @access  Private
+exports.clearAllQuestions = asyncHandler(async (req, res) => {
+  await Question.deleteMany({ user: req.user.id });
+  await User.findByIdAndUpdate(req.user.id, {
+    'stats.totalDSASolved': 0,
+  });
+  res.status(200).json(successResponse(null, 'All DSA questions cleared successfully'));
+});

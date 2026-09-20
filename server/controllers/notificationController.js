@@ -48,3 +48,12 @@ exports.deleteNotification = asyncHandler(async (req, res) => {
   await notification.deleteOne();
   res.status(200).json(successResponse(null, 'Notification deleted'));
 });
+
+// @desc    Clear all notifications for user
+// @route   DELETE /api/notifications/clear-all
+// @access  Private
+exports.clearAllNotifications = asyncHandler(async (req, res) => {
+  await Notification.deleteMany({ user: req.user.id });
+  res.status(200).json(successResponse(null, 'All notifications cleared successfully'));
+});
+

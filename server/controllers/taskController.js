@@ -247,3 +247,15 @@ exports.getUpcomingSession = asyncHandler(async (req, res) => {
 
   res.status(200).json(successResponse(upcomingTasks, 'Upcoming study sessions fetched successfully'));
 });
+
+// @desc    Clear all tasks for logged-in user
+// @route   DELETE /api/tasks/clear-all
+// @access  Private
+exports.clearAllTasks = asyncHandler(async (req, res) => {
+  await Task.deleteMany({ user: req.user.id });
+  await User.findByIdAndUpdate(req.user.id, {
+    'stats.totalTasksDone': 0,
+    'stats.totalStudyHours': 0,
+  });
+  res.status(200).json(successResponse(null, 'All study tasks cleared successfully'));
+});

@@ -68,6 +68,11 @@ const taskService = {
     const response = await api.delete(`/tasks/${id}`);
     return response.data;
   },
+
+  clearAll: async () => {
+    const response = await api.delete('/tasks/clear-all');
+    return response.data;
+  },
 };
 
 export default taskService;

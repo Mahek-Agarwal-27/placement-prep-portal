@@ -165,6 +165,17 @@ const ResumeAnalyzerPage = () => {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL resume scans?')) return;
+    try {
+      await resumeService.clearAll();
+      setActiveAnalysis(null);
+      fetchHistory();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased h-screen overflow-hidden">
       <Sidebar />
@@ -185,7 +196,18 @@ const ResumeAnalyzerPage = () => {
           </div>
           
           <div className="p-4 flex-1">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Scan History</h3>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Scan History</h3>
+              {history.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Clear all past scans"
+                >
+                  <Trash2 className="w-3 h-3" /> Clear All
+                </button>
+              )}
+            </div>
             {loadingHistory ? (
               <div className="text-center py-6 text-xs text-slate-400">Loading history...</div>
             ) : history.length === 0 ? (
@@ -393,7 +415,7 @@ const ResumeAnalyzerPage = () => {
               {/* Grid 2-Column: Strengths & Missing Skills */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Keyword Matching / Strengths */}
+                {/* 1. Keyword Matching & Strengths */}
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
                   <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Keyword Alignment & Strengths
@@ -402,7 +424,7 @@ const ResumeAnalyzerPage = () => {
                     {activeAnalysis.feedback?.keywordMatching?.map((item, idx) => (
                       <li key={idx} className="text-xs text-slate-700 flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                         <span className="text-emerald-600 font-bold">✓</span>
-                        <span>{item}</span>
+                        <span>{typeof item === 'string' ? item : item.name || JSON.stringify(item)}</span>
                       </li>
                     ))}
                     {(!activeAnalysis.feedback?.keywordMatching || activeAnalysis.feedback.keywordMatching.length === 0) && (
@@ -411,25 +433,62 @@ const ResumeAnalyzerPage = () => {
                   </ul>
                 </div>
 
-                {/* Bullet Points Suggestions */}
+                {/* 2. Missing / Recommended Keywords */}
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
                   <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                    <Target className="w-4 h-4 text-blue-600" /> Bullet Point Improvements
+                    <AlertCircle className="w-4 h-4 text-amber-600" /> Missing / Recommended Keywords
                   </h3>
                   <ul className="space-y-2">
-                    {activeAnalysis.feedback?.bulletPoints?.map((item, idx) => (
+                    {activeAnalysis.feedback?.missingKeywords?.map((item, idx) => (
                       <li key={idx} className="text-xs text-slate-700 flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                        <span className="text-blue-600 font-bold">•</span>
-                        <span>{item}</span>
+                        <span className="text-amber-600 font-bold">+</span>
+                        <span>{typeof item === 'string' ? item : item.name || JSON.stringify(item)}</span>
                       </li>
                     ))}
-                    {(!activeAnalysis.feedback?.bulletPoints || activeAnalysis.feedback.bulletPoints.length === 0) && (
-                      <li className="text-xs text-slate-400">No bullet point recommendations.</li>
+                    {(!activeAnalysis.feedback?.missingKeywords || activeAnalysis.feedback.missingKeywords.length === 0) && (
+                      <li className="text-xs text-slate-400">No critical keyword gaps identified for this profile.</li>
                     )}
                   </ul>
                 </div>
 
-                {/* Formatting Feedback */}
+                {/* 3. Bullet Point Improvements */}
+                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm md:col-span-2 space-y-3">
+                  <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Target className="w-4 h-4 text-blue-600" /> Bullet Point Improvements
+                  </h3>
+                  <div className="space-y-3">
+                    {activeAnalysis.feedback?.bulletPoints?.map((item, idx) => {
+                      const isStructured = typeof item === 'object' && item !== null && (item.original || item.improved);
+                      if (isStructured) {
+                        return (
+                          <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2 text-xs">
+                            {item.original && (
+                              <div className="flex items-start gap-2">
+                                <span className="font-semibold text-slate-500 uppercase text-[10px] tracking-wider shrink-0 bg-slate-200/70 px-1.5 py-0.5 rounded mt-0.5">Original</span>
+                                <span className="text-slate-600 italic">"{item.original}"</span>
+                              </div>
+                            )}
+                            <div className="flex items-start gap-2 font-medium">
+                              <span className="font-semibold text-emerald-700 uppercase text-[10px] tracking-wider shrink-0 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded mt-0.5">Improved</span>
+                              <span className="text-slate-900">{item.improved || item.original}</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={idx} className="text-xs text-slate-700 flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                          <span className="text-blue-600 font-bold">•</span>
+                          <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
+                        </div>
+                      );
+                    })}
+                    {(!activeAnalysis.feedback?.bulletPoints || activeAnalysis.feedback.bulletPoints.length === 0) && (
+                      <p className="text-xs text-slate-400">No bullet point recommendations provided.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. Layout & Formatting Audit */}
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm md:col-span-2 space-y-3">
                   <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-slate-600" /> Layout & Formatting Audit
@@ -438,7 +497,7 @@ const ResumeAnalyzerPage = () => {
                     {activeAnalysis.feedback?.formatting?.map((item, idx) => (
                       <li key={idx} className="text-xs text-slate-700 flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                         <span className="text-purple-600 font-bold">•</span>
-                        <span>{item}</span>
+                        <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
                       </li>
                     ))}
                     {(!activeAnalysis.feedback?.formatting || activeAnalysis.feedback.formatting.length === 0) && (
@@ -446,6 +505,25 @@ const ResumeAnalyzerPage = () => {
                     )}
                   </ul>
                 </div>
+
+                {/* 5. Final Action Items */}
+                {activeAnalysis.feedback?.actionItems && activeAnalysis.feedback.actionItems.length > 0 && (
+                  <div className="bg-white border border-purple-200 rounded-xl p-5 shadow-sm md:col-span-2 space-y-3">
+                    <h3 className="text-xs font-semibold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <FileCheck className="w-4 h-4 text-purple-600" /> Final Action Items
+                    </h3>
+                    <ul className="space-y-2">
+                      {activeAnalysis.feedback.actionItems.map((item, idx) => (
+                        <li key={idx} className="text-xs text-slate-700 flex items-start gap-2.5 bg-purple-50/40 p-2.5 rounded-lg border border-purple-100">
+                          <span className="w-4 h-4 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <span className="mt-0.5 text-slate-800">{typeof item === 'string' ? item : JSON.stringify(item)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
               </div>
 

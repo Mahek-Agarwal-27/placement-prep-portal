@@ -69,7 +69,7 @@ const FeaturesPage = () => {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto w-full px-6 pt-2 pb-10 flex-1 space-y-10">
+        <main className="max-w-7xl mx-auto w-full px-6 -mt-10 pb-10 flex-1 space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <span className="text-xs font-black uppercase tracking-wider text-[#6C47FF] bg-purple-100/80 px-3.5 py-1 rounded-full border border-purple-200">
               Powerful Modules

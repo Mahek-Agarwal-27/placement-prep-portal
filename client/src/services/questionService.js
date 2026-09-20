@@ -56,6 +56,11 @@ const questionService = {
     const response = await api.delete(`/questions/${id}`);
     return response.data; // { success, message }
   },
+
+  clearAll: async () => {
+    const response = await api.delete('/questions/clear-all');
+    return response.data;
+  },
 };
 
 export default questionService;

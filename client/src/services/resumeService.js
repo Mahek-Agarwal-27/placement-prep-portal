@@ -30,6 +30,11 @@ const resumeService = {
     const response = await api.delete(`/resumes/${id}`);
     return response.data;
   },
+
+  clearAll: async () => {
+    const response = await api.delete('/resumes/clear-all');
+    return response.data;
+  },
 };
 
 export default resumeService;

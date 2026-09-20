@@ -60,6 +60,11 @@ const interviewService = {
     const response = await api.delete(`/interviews/${id}`);
     return response.data;
   },
+
+  clearAll: async () => {
+    const response = await api.delete('/interviews/clear-all');
+    return response.data;
+  },
 };
 
 export default interviewService;

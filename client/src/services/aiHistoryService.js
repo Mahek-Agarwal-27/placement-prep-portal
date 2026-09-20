@@ -20,6 +20,11 @@ const aiHistoryService = {
     const response = await api.delete('/ai-history/clear-all');
     return response.data;
   },
+
+  clearHistory: async () => {
+    const response = await api.delete('/ai-history/clear-all');
+    return response.data;
+  },
 };
 
 export default aiHistoryService;

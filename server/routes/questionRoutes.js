@@ -20,6 +20,7 @@ const {
   updateQuestion,
   deleteQuestion,
   getStats,
+  clearAllQuestions,
 } = require('../controllers/questionController');
 
 // All routes in this file require authentication
@@ -29,8 +30,9 @@ router.route('/')
   .get(getQuestions)
   .post(addQuestion);
 
-// Stats route — must be BEFORE /:id so it is not treated as an id
+// Stats & clear-all routes — must be BEFORE /:id so it is not treated as an id
 router.get('/stats', getStats);
+router.delete('/clear-all', clearAllQuestions);
 
 router.route('/:id')
   .put(updateQuestion)
