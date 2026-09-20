@@ -14,14 +14,15 @@ import {
   LineChart,
   Line,
   CartesianGrid,
+  Legend,
 } from 'recharts';
 import questionService from '../services/questionService';
 import taskService from '../services/taskService';
 import resumeService from '../services/resumeService';
 import interviewService from '../services/interviewService';
-import { BarChart3, Code2, FileText, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { BarChart3, Code2, FileText, MessageSquare, CheckCircle2, Calendar } from 'lucide-react';
 
-const COLORS = ['#10B981', '#F59E0B', '#EF4444'];
+const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'];
 
 const AnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,7 @@ const AnalyticsPage = () => {
   const [dsaStats, setDsaStats] = useState([]);
   const [dsaTotal, setDsaTotal] = useState(0);
   const [taskStats, setTaskStats] = useState(null);
+  const [taskChartData, setTaskChartData] = useState([]);
   const [resumeData, setResumeData] = useState([]);
   const [interviewData, setInterviewData] = useState([]);
 
@@ -48,7 +50,7 @@ const AnalyticsPage = () => {
         
         // 1. Process DSA Stats
         if (qRes.success && qRes.data) {
-          const { byDifficulty, byTopic, totalSolved } = qRes.data;
+          const { byDifficulty, totalSolved } = qRes.data;
           if (Array.isArray(byDifficulty)) {
             const formattedDsa = byDifficulty.map((d) => ({
               name: d._id || 'Unknown',
@@ -59,14 +61,32 @@ const AnalyticsPage = () => {
           setDsaTotal(totalSolved ?? 0);
         }
 
-        // 2. Process Study Planner Stats
+        // 2. Process Study Planner & Task Tracker Stats
         if (tRes.success && tRes.data) {
           setTaskStats(tRes.data);
+          const byCat = tRes.data.byCategory || [];
+          if (byCat.length > 0) {
+            const formattedTasks = byCat.map((cat) => ({
+              name: cat._id || 'General',
+              completed: cat.completed || 0,
+              pending: Math.max(0, (cat.total || 0) - (cat.completed || 0)),
+              total: cat.total || 0,
+            }));
+            setTaskChartData(formattedTasks);
+          } else if ((tRes.data.totalTasks || 0) > 0) {
+            setTaskChartData([
+              { name: 'Completed', completed: tRes.data.totalCompleted || 0, pending: 0 },
+              { name: 'In Progress', completed: 0, pending: tRes.data.totalInProgress || 0 },
+              { name: 'Pending', completed: 0, pending: tRes.data.totalPending || 0 },
+            ]);
+          } else {
+            setTaskChartData([]);
+          }
         }
 
         // 3. Process Resume Scores Over Time
         if (rRes.success && Array.isArray(rRes.data)) {
-          const formattedResume = rRes.data.reverse().map((r, i) => ({
+          const formattedResume = rRes.data.slice().reverse().map((r, i) => ({
             name: `Scan ${i + 1}`,
             score: r.atsScore || 0,
           }));
@@ -79,7 +99,7 @@ const AnalyticsPage = () => {
             .map((item, idx) => {
               const scoreVal = item.feedback?.score ?? item.score;
               return {
-                name: `Session ${idx + 1}`,
+                name: item.topic ? (item.topic.length > 14 ? `${item.topic.slice(0, 14)}...` : item.topic) : `Session ${idx + 1}`,
                 score: scoreVal !== undefined && scoreVal !== null ? Number(scoreVal) : null,
               };
             })
@@ -111,10 +131,10 @@ const AnalyticsPage = () => {
         {/* Header */}
         <div className="border-b border-slate-200 pb-6">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-blue-600" /> Placement Analytics & Performance
+            <BarChart3 className="w-6 h-6 text-purple-600" /> Progress & Placement Analytics
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Unified view of your DSA progress, study logs, resume scores, and interview performance.
+            Unified view of your DSA progress, study task tracker, resume ATS scores, and interview evaluations.
           </p>
         </div>
 
@@ -185,12 +205,19 @@ const AnalyticsPage = () => {
 
         </div>
 
-        {/* Charts Grid */}
+        {/* Charts Grid: 2x2 Clean Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Chart 1: DSA Breakdown */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <h3 className="font-semibold text-slate-900 text-sm mb-4">DSA Problem Difficulty Distribution</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-[#6C47FF]" /> DSA Difficulty Distribution
+              </h3>
+              <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                {dsaTotal} Total Solved
+              </span>
+            </div>
             <div className="h-64">
               {loading ? (
                 <div className="h-full flex items-center justify-center text-xs text-slate-400">Loading chart...</div>
@@ -205,15 +232,54 @@ const AnalyticsPage = () => {
                       ))}
                     </Pie>
                     <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '8px', fontSize: '12px' }} />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
             </div>
           </div>
 
-          {/* Chart 2: Resume History */}
+          {/* Chart 2: Study Tasks Progress & Category Distribution */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <h3 className="font-semibold text-slate-900 text-sm mb-4">Resume ATS Score History</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#6C47FF]" /> Study Task Tracker Graph
+              </h3>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
+                {taskStats?.totalCompleted || 0}/{taskStats?.totalTasks || 0} Tasks Done
+              </span>
+            </div>
+            <div className="h-64">
+              {loading ? (
+                <div className="h-full flex items-center justify-center text-xs text-slate-400">Loading chart...</div>
+              ) : taskChartData.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-xs text-slate-400">No study tasks data available. Add tasks in Study Planner.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={taskChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                    <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} />
+                    <YAxis stroke="#94A3B8" fontSize={11} allowDecimals={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '8px', fontSize: '12px' }} />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }} />
+                    <Bar dataKey="completed" name="Completed" fill="#10B981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="pending" name="Pending" fill="#6C47FF" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Chart 3: Resume History */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#6C47FF]" /> Resume ATS Score History
+              </h3>
+              <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+                Peak: {highestResumeScore}%
+              </span>
+            </div>
             <div className="h-64">
               {loading ? (
                 <div className="h-full flex items-center justify-center text-xs text-slate-400">Loading chart...</div>
@@ -221,7 +287,7 @@ const AnalyticsPage = () => {
                 <div className="h-full flex items-center justify-center text-xs text-slate-400">No resume history available.</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={resumeData}>
+                  <LineChart data={resumeData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                     <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} />
                     <YAxis domain={[0, 100]} stroke="#94A3B8" fontSize={11} />
@@ -233,9 +299,16 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Chart 3: Mock Interview Performance */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm lg:col-span-2">
-            <h3 className="font-semibold text-slate-900 text-sm mb-4">Mock Interview Score Progress</h3>
+          {/* Chart 4: Mock Interview Performance */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#6C47FF]" /> Mock Interview Score Progress
+              </h3>
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
+                Top: {highestInterviewScore}%
+              </span>
+            </div>
             <div className="h-64">
               {loading ? (
                 <div className="h-full flex items-center justify-center text-xs text-slate-400">Loading chart...</div>
@@ -243,9 +316,9 @@ const AnalyticsPage = () => {
                 <div className="h-full flex items-center justify-center text-xs text-slate-400">No mock interview data available.</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={interviewData}>
+                  <BarChart data={interviewData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                    <XAxis dataKey="topic" stroke="#94A3B8" fontSize={11} />
+                    <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} />
                     <YAxis domain={[0, 100]} stroke="#94A3B8" fontSize={11} />
                     <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '8px', fontSize: '12px' }} />
                     <Bar dataKey="score" fill="#2563EB" radius={[4, 4, 0, 0]} />
@@ -264,3 +337,4 @@ const AnalyticsPage = () => {
 };
 
 export default AnalyticsPage;
+
