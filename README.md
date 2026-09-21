@@ -15,7 +15,7 @@
 
 **An all-in-one AI career ecosystem designed to help students and developers master campus placements, algorithmic interviews, resume ATS scoring, and structured study planning.**
 
-[🌐 Live Demo (Vercel)](https://placement-prep-portal.vercel.app) • [⚙️ Backend API (Render)](https://placement-prep-portal-v3w5.onrender.com)
+[🌐 Live Demo (Vercel)](https://placement-prep-portal-alpha.vercel.app) • [⚙️ Backend API (Render)](https://placement-prep-portal-v3w5.onrender.com)
 
 </div>
 
