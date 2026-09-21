@@ -23,12 +23,12 @@
 
 ## 🌟 Key Features
 
-### 1. 🎤 AI Real-Time Mock Interview Room
-- Interactive conversational AI mock interviews powered by ultra-low-latency **Groq LLaMA-3.3-70B**.
+### 1. 💬 AI Interactive Chat Mock Interview Room
+- Conversational chat-based AI mock interviews powered by ultra-low-latency **Groq LLaMA-3.3-70B**.
 - Multi-domain interview topics: DSA, System Design, Full-Stack, OOPs, DBMS, OS, Behavioral, and HR rounds.
-- Real-time **Speech Recognition (STT)** and **Speech Synthesis (TTS)** for realistic voice-based mock sessions.
-- Comprehensive score breakdown, strengths analysis, and feedback rating after each session.
-- Manage past interview sessions with single & bulk deletion support.
+- Dynamic question-by-question technical evaluation with progressive follow-up questions.
+- Comprehensive score breakdown, strengths analysis, and detailed feedback rating after each session.
+- Manage active and past interview sessions with single & bulk deletion support.
 
 ### 2. 📄 AI Resume Intelligence & ATS Scanner
 - Upload PDF resumes to receive instant **ATS Compatibility Scores (0-100%)**.
