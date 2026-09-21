@@ -27,13 +27,26 @@ console.log(`🔑 GROQ_API_KEY loaded: ${process.env.GROQ_API_KEY ? 'YES (' + pr
 
 // ── Middlewares ───────────────────────────────────────────────────────────────
 
-// CORS — allow requests from the React dev server and production domain
+// CORS — allow requests from the React dev server, Vercel, and production domain
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    process.env.CLIENT_URL
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.includes('localhost') ||
+      origin.includes('vercel.app')
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 
