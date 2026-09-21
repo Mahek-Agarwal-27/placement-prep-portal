@@ -29,7 +29,9 @@ const ContactPage = () => {
             <Link to="/" className="p-2 rounded-2xl bg-white/80 backdrop-blur-md border border-purple-200 text-[#6C47FF] hover:bg-white transition-all">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <Logo showText={true} textClassName="text-2xl font-black" />
+            <Link to="/" className="hover:opacity-90 transition-opacity">
+              <Logo showText={true} textClassName="text-2xl font-black" />
+            </Link>
           </div>
 
           <div className="flex items-center gap-3">

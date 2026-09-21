@@ -93,7 +93,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, initial }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-700">Platform</label>
               <select className="input-field" value={form.platform} onChange={set('platform')}>
@@ -108,7 +108,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, initial }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-700">Topic</label>
               <select className="input-field" value={form.topic} onChange={set('topic')}>
@@ -273,24 +273,24 @@ const DSATrackerPage = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <Navbar />
 
-        <main className="flex-1 max-w-[1500px] mx-auto w-full p-8 space-y-8">
+        <main className="flex-1 max-w-[1500px] mx-auto w-full p-4 sm:p-6 lg:p-8 pb-24 sm:pb-12 lg:pb-8 space-y-6 sm:space-y-8">
           
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-5 sm:pb-6">
             <div>
-              <h1 className="text-2xl font-black text-[#1A1A2E] tracking-tight flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-[#1A1A2E] tracking-tight flex items-center gap-2">
                 <Code2 className="w-6 h-6 text-[#6C47FF]" /> DSA Learning Tracker
               </h1>
-              <p className="text-sm text-gray-500 font-medium mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">
                 Log solved problems, track topic completion rates, and maintain consistency.
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
               {questions.length > 0 && (
                 <button 
                   onClick={handleClearAll}
-                  className="px-4 py-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-100 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-100 transition-all flex items-center gap-1.5 cursor-pointer"
                   title="Clear all DSA questions"
                 >
                   <Trash2 className="w-4 h-4" /> Clear All
@@ -298,7 +298,7 @@ const DSATrackerPage = () => {
               )}
               <button 
                 onClick={() => { setEditTarget(null); setModalOpen(true); }}
-                className="px-6 py-3 rounded-2xl bg-[#6C47FF] text-white font-bold text-sm hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-[#6C47FF] text-white font-bold text-xs sm:text-sm hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Log Problem
               </button>
@@ -306,46 +306,46 @@ const DSATrackerPage = () => {
           </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Logged</span>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{stats?.totalQuestions ?? 0}</p>
-            <span className="text-[11px] text-slate-400">problems recorded</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-slate-500 uppercase tracking-wider">Total Logged</span>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{stats?.totalQuestions ?? 0}</p>
+            <span className="text-[10px] sm:text-[11px] text-slate-400">problems recorded</span>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-emerald-600 uppercase tracking-wider">Easy</span>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{byDiff['Easy']?.solved ?? 0}</p>
-            <span className="text-[11px] text-slate-400">of {byDiff['Easy']?.total ?? 0} solved</span>
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-emerald-600 uppercase tracking-wider">Easy</span>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{byDiff['Easy']?.solved ?? 0}</p>
+            <span className="text-[10px] sm:text-[11px] text-slate-400">of {byDiff['Easy']?.total ?? 0} solved</span>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-amber-600 uppercase tracking-wider">Medium</span>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{byDiff['Medium']?.solved ?? 0}</p>
-            <span className="text-[11px] text-slate-400">of {byDiff['Medium']?.total ?? 0} solved</span>
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-amber-600 uppercase tracking-wider">Medium</span>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{byDiff['Medium']?.solved ?? 0}</p>
+            <span className="text-[10px] sm:text-[11px] text-slate-400">of {byDiff['Medium']?.total ?? 0} solved</span>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-rose-600 uppercase tracking-wider">Hard</span>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{byDiff['Hard']?.solved ?? 0}</p>
-            <span className="text-[11px] text-slate-400">of {byDiff['Hard']?.total ?? 0} solved</span>
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-rose-600 uppercase tracking-wider">Hard</span>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{byDiff['Hard']?.solved ?? 0}</p>
+            <span className="text-[10px] sm:text-[11px] text-slate-400">of {byDiff['Hard']?.total ?? 0} solved</span>
           </div>
         </div>
 
         {/* Dynamic Topic Mastery Progress Cards */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
               <Layers className="w-4 h-4 text-blue-600" /> Topic Mastery & Completion
             </h3>
-            <span className="text-xs text-slate-400">
+            <span className="text-[11px] sm:text-xs text-slate-400">
               Updates in real-time based on your logged problems
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-1">
             {topicProgress.map((tp) => (
-              <div key={tp.topic} className="p-3.5 border border-slate-100 rounded-lg bg-slate-50 space-y-2">
+              <div key={tp.topic} className="p-3 sm:p-3.5 border border-slate-100 rounded-lg bg-slate-50 space-y-2">
                 <div className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-slate-800">{tp.topic}</span>
                   <span className="font-bold text-blue-600">{tp.percent}% ({tp.solved}/{tp.total})</span>
@@ -362,21 +362,21 @@ const DSATrackerPage = () => {
         </div>
 
         {/* Filter Controls Bar */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
+        <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
           
           <div className="relative w-full md:w-72">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <input 
-              className="input-field pl-9 py-2 text-xs" 
+              className="input-field pl-9 py-2 text-xs w-full" 
               placeholder="Search problems by title..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
             <select 
-              className="input-field py-2 text-xs w-auto"
+              className="input-field py-2 text-xs flex-1 sm:flex-initial sm:w-auto"
               value={filterDiff}
               onChange={(e) => setFilterDiff(e.target.value)}
             >
@@ -385,7 +385,7 @@ const DSATrackerPage = () => {
             </select>
 
             <select 
-              className="input-field py-2 text-xs w-auto"
+              className="input-field py-2 text-xs flex-1 sm:flex-initial sm:w-auto"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
@@ -394,7 +394,7 @@ const DSATrackerPage = () => {
             </select>
 
             <select 
-              className="input-field py-2 text-xs w-auto"
+              className="input-field py-2 text-xs flex-1 sm:flex-initial sm:w-auto"
               value={filterTopic}
               onChange={(e) => setFilterTopic(e.target.value)}
             >
@@ -425,7 +425,7 @@ const DSATrackerPage = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full text-left text-xs border-collapse min-w-[600px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                     <th className="py-3 px-4">Status</th>

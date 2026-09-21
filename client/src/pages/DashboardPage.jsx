@@ -3,23 +3,25 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import FloatingAIAssistant from '../components/FloatingAIAssistant';
 import {
   Code2,
   FileText,
-  Sparkles,
   Calendar as CalendarIcon,
-  Bot,
   Mic,
   ArrowRight,
   CheckCircle2,
-  Clock
+  Target,
+  Flame,
+  Activity,
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 
 import taskService from '../services/taskService';
 import questionService from '../services/questionService';
 import interviewService from '../services/interviewService';
 import resumeService from '../services/resumeService';
+import activityService from '../services/activityService';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -27,7 +29,6 @@ const DashboardPage = () => {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-  const [showRecModal, setShowRecModal] = useState(false);
 
   // Real user data state
   const [tasks, setTasks] = useState([]);
@@ -38,16 +39,18 @@ const DashboardPage = () => {
   const [upcomingInterview, setUpcomingInterview] = useState(null);
   const [resumes, setResumes] = useState([]);
   const [latestResume, setLatestResume] = useState(null);
+  const [activities, setActivities] = useState([]);
 
   const fetchData = async () => {
     try {
-      const [tasksRes, upcomingRes, questionsRes, pendingQRes, interviewsRes, resumesRes] = await Promise.allSettled([
+      const [tasksRes, upcomingRes, questionsRes, pendingQRes, interviewsRes, resumesRes, actRes] = await Promise.allSettled([
         taskService.getTasks(),
         taskService.getUpcomingSession(),
         questionService.getQuestions(),
         questionService.getQuestions({ status: 'to-do' }),
         interviewService.getInterviews(),
         resumeService.getResumes(),
+        activityService.getActivities(),
       ]);
 
       if (tasksRes.status === 'fulfilled' && tasksRes.value?.success && Array.isArray(tasksRes.value.data)) {
@@ -83,6 +86,10 @@ const DashboardPage = () => {
         setResumes(resumesRes.value.data);
         setLatestResume(resumesRes.value.data[0] || null);
       }
+
+      if (actRes.status === 'fulfilled' && actRes.value?.success && Array.isArray(actRes.value.data)) {
+        setActivities(actRes.value.data);
+      }
     } catch (err) {
       console.error('Error fetching dashboard:', err);
     } finally {
@@ -94,71 +101,141 @@ const DashboardPage = () => {
     fetchData();
   }, [location.pathname]);
 
-  // Compute dynamic AI Recommendation based on real user activity
-  const getDynamicAIRecommendation = () => {
-    if (!latestResume) {
-      return {
-        title: 'Upload Resume for ATS Check',
-        shortDesc: 'Analyze your resume ATS match score & get instant optimization tips.',
-        modalTitle: 'AI Resume ATS Recommendation',
-        modalPoints: [
-          'Upload your latest resume in PDF or DOCX format.',
-          'Benchmark your technical keywords against modern job descriptions.',
-          'Identify missing skills to pass corporate automated screeners.'
-        ],
-        actionLabel: 'Go to Resume Analyzer',
-        actionPath: '/resume-analyzer'
-      };
-    }
+  const completedTasksCount = tasks.filter((t) => t.status === 'completed').length;
 
-    if (pendingDSA.length > 0) {
-      const topTopic = pendingDSA[0]?.topic || 'Data Structures';
-      return {
-        title: `Focus on ${topTopic}`,
-        shortDesc: `You have ${pendingDSA.length} pending problem${pendingDSA.length === 1 ? '' : 's'}. Target ${topTopic} to build problem-solving agility.`,
-        modalTitle: `AI DSA Strategy: ${topTopic}`,
-        modalPoints: [
-          `Prioritize pending questions: ${pendingDSA.slice(0, 2).map((q) => q.title).join(', ')}.`,
-          'Focus on time & space complexity edge cases.',
-          'Mark questions as completed to track your mastery progress.'
-        ],
+  // Compute Today's Mission tasks from real student data (Unified & non-repeating)
+  const getDailyMissions = () => {
+    return [
+      {
+        tag: 'Resume ATS',
+        icon: FileText,
+        title: latestResume ? 'Review ATS Keywords' : 'Upload & Scan Resume',
+        subtitle: latestResume
+          ? `ATS Score: ${latestResume.atsScore || 0}% • ${latestResume.targetRole || 'Target Role'}`
+          : 'Benchmark resume ATS score and identify skill gaps',
+        completed: Boolean(latestResume),
+        statusLabel: latestResume ? `${latestResume.atsScore || 0}% ATS` : 'To Do',
+        actionLabel: latestResume ? 'Improve Resume' : 'Analyze Resume',
+        path: '/resume-analyzer',
+      },
+      {
+        tag: 'DSA Tracker',
+        icon: Code2,
+        title: pendingDSA.length > 0 ? `Solve: ${pendingDSA[0].title}` : (questions.length > 0 ? 'Practice Core DSA' : 'Add Target DSA Problem'),
+        subtitle: pendingDSA.length > 0
+          ? `${pendingDSA[0].difficulty} • ${pendingDSA[0].topic || 'DSA'} (${pendingDSA[0].platform || 'LeetCode'})`
+          : (questions.length > 0 ? `${questions.length} problems logged in tracker` : 'Queue coding challenges for daily practice'),
+        completed: pendingDSA.length === 0 && questions.length > 0,
+        statusLabel: pendingDSA.length > 0 ? `${pendingDSA.length} Pending` : (questions.length > 0 ? 'Completed' : 'To Do'),
         actionLabel: 'Open DSA Tracker',
-        actionPath: '/dsa-tracker'
-      };
-    }
-
-    if (interviews.length === 0) {
-      return {
-        title: 'Start First Mock Interview',
-        shortDesc: 'Simulate live technical & behavioral rounds with AI Recruiter.',
-        modalTitle: 'AI Interview Readiness Recommendation',
-        modalPoints: [
-          'Practice live coding explanations and problem formulation.',
-          'Receive detailed scoring on technical accuracy & communication.',
-          'Review AI feedback breakdown to target weak spots.'
-        ],
-        actionLabel: 'Start Mock Interview',
-        actionPath: '/mock-interview'
-      };
-    }
-
-    const completedTasksCount = tasks.filter((t) => t.status === 'completed').length;
-    return {
-      title: 'Maintain Prep Consistency',
-      shortDesc: `${completedTasksCount}/${tasks.length || 0} tasks done • ${questions.length} DSA problems logged. Keep your momentum going.`,
-      modalTitle: 'AI Placement Roadmap',
-      modalPoints: [
-        'Review your recent mock interview feedback notes.',
-        'Complete today\'s study milestones in the study planner.',
-        'Solve 1-2 medium DSA problems to stay sharp.'
-      ],
-      actionLabel: 'Open Study Planner',
-      actionPath: '/study-planner'
-    };
+        path: '/dsa-tracker',
+      },
+      {
+        tag: 'AI Interview',
+        icon: Mic,
+        title: upcomingInterview?.status === 'active'
+          ? `Resume: ${upcomingInterview.topic || 'Interview'}`
+          : (interviews.length > 0 ? (upcomingInterview?.topic || 'Technical Interview') : 'First Mock Interview'),
+        subtitle: upcomingInterview?.status === 'active'
+          ? 'Live technical round in progress'
+          : (interviews.length > 0
+            ? `Last Score: ${upcomingInterview?.feedback?.score || 0}% • ${upcomingInterview?.type || 'Technical'} Round`
+            : 'Simulate 15-minute interview with AI Recruiter'),
+        completed: Boolean(interviews.length > 0 && upcomingInterview?.status !== 'active'),
+        statusLabel: upcomingInterview?.status === 'active'
+          ? 'In Progress'
+          : (interviews.length > 0 ? 'Evaluated' : 'To Do'),
+        actionLabel: upcomingInterview?.status === 'active' ? 'Resume Session' : 'Start Interview',
+        path: '/mock-interview',
+      },
+      {
+        tag: 'Study Planner',
+        icon: CalendarIcon,
+        title: upcomingTasks.length > 0
+          ? `Task: ${upcomingTasks[0].title}`
+          : (tasks.length > 0 ? 'Daily Study Milestone' : 'Schedule Study Tasks'),
+        subtitle: upcomingTasks.length > 0
+          ? `${upcomingTasks[0].dueDate ? 'Due Today' : 'Scheduled'} • ${upcomingTasks[0].category || 'General'}`
+          : (tasks.length > 0 ? `${completedTasksCount} of ${tasks.length} tasks finished` : 'Set daily preparation milestones and schedule tasks'),
+        completed: upcomingTasks.length === 0 && completedTasksCount > 0,
+        statusLabel: tasks.length > 0 ? `${Math.round((completedTasksCount / tasks.length) * 100)}% Done` : 'To Do',
+        actionLabel: tasks.length > 0 ? 'Open Study Planner' : 'Create Study Plan',
+        path: '/study-planner',
+      },
+    ];
   };
 
-  const aiRec = getDynamicAIRecommendation();
-  const completedTasksCount = tasks.filter((t) => t.status === 'completed').length;
+  const dailyMissions = getDailyMissions();
+  const completedMissionsCount = dailyMissions.filter((m) => m.completed).length;
+
+  // Compute real 7-day activity rhythm & consistency
+  const getWeeklyRhythm = () => {
+    const days = [];
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const dayNum = d.getDate();
+      const isToday = i === 0;
+
+      // Check activity logs
+      const dayActivities = (activities || []).filter((a) => {
+        const aDate = new Date(a.createdAt || a.timestamp || a.date);
+        return !isNaN(aDate) && aDate.toISOString().split('T')[0] === dateStr;
+      });
+
+      // Check completed tasks
+      const dayCompletedTasks = (tasks || []).filter((t) => {
+        if (t.status !== 'completed') return false;
+        const tDate = new Date(t.updatedAt || t.createdAt);
+        return !isNaN(tDate) && tDate.toISOString().split('T')[0] === dateStr;
+      });
+
+      // Check solved questions
+      const dayQuestions = (questions || []).filter((q) => {
+        if (q.status !== 'solved') return false;
+        const qDate = new Date(q.updatedAt || q.createdAt);
+        return !isNaN(qDate) && qDate.toISOString().split('T')[0] === dateStr;
+      });
+
+      // Check interviews
+      const dayInterviews = (interviews || []).filter((iv) => {
+        const ivDate = new Date(iv.createdAt || iv.updatedAt);
+        return !isNaN(ivDate) && ivDate.toISOString().split('T')[0] === dateStr;
+      });
+
+      const totalCount = dayActivities.length + dayCompletedTasks.length + dayQuestions.length + dayInterviews.length;
+
+      days.push({
+        dateStr,
+        dayLabel,
+        dayNum,
+        isToday,
+        count: totalCount,
+        isActive: totalCount > 0,
+      });
+    }
+    return days;
+  };
+
+  const weeklyDays = getWeeklyRhythm();
+  const activeDaysCount = weeklyDays.filter((d) => d.isActive).length;
+  const consistencyPercentage = Math.round((activeDaysCount / 7) * 100);
+  const currentStreak = user?.streak?.currentStreak || (activeDaysCount > 0 ? (weeklyDays[6].isActive ? 1 : 0) : 0);
+  const longestStreak = Math.max(user?.streak?.longestStreak || 0, currentStreak);
+
+  const getAIInsight = () => {
+    if (currentStreak >= 3 || activeDaysCount >= 4) {
+      return "You've been consistently practicing this week. Keep building your preparation habit.";
+    }
+    if (currentStreak >= 1 || activeDaysCount >= 1) {
+      return "Good momentum! Solve a DSA challenge or practice a mock interview today to maintain your streak.";
+    }
+    return "No study activity recorded yet this week. Complete a mission above to kickstart your learning rhythm.";
+  };
 
   return (
     <div className="min-h-screen bg-[#EFE9FE] flex text-[#1A1A2E] font-sans antialiased">
@@ -172,333 +249,242 @@ const DashboardPage = () => {
         <Navbar />
 
         {/* ── MAIN DASHBOARD CONTAINER ───────────────────────────────── */}
-        <main className="p-8 space-y-8 max-w-[1500px] w-full mx-auto">
+        <main className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-12 lg:pb-8 space-y-6 sm:space-y-8 max-w-[1500px] w-full mx-auto">
 
-          {/* ── AI OVERVIEW PANEL ── */}
-          <div className="purple-panel bg-[#E8DEFD] border border-[#D7C7FE] rounded-3xl p-6 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-[#1A1A2E] tracking-tight">
-                AI Overview
-              </h2>
-              <span className="text-[11px] font-bold text-purple-700 bg-purple-200/60 px-3 py-1 rounded-full border border-purple-300/40">
-                Live Insights
-              </span>
-            </div>
-
-            {/* 4 Equal Workable Sub-cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-
-              {/* Card 1: AI Recommendation */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+          {/* ── TODAY'S MISSION (Main Actionable Hub) ── */}
+          <div className="purple-panel bg-[#E8DEFD] border border-[#D7C7FE] rounded-3xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 shadow-sm">
+            
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-200/60 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#6C47FF] text-white flex items-center justify-center shadow-xs shrink-0">
+                  <Target className="w-5 h-5" />
+                </div>
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center mb-3">
-                    <Bot className="w-5 h-5 text-[#6C47FF]" />
-                  </div>
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                    AI Recommendation
-                  </span>
-                  <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug line-clamp-1">
-                    {aiRec.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
-                    {aiRec.shortDesc}
+                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A1A2E] tracking-tight">
+                    Today's Mission
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-gray-600 font-medium">
+                    Small, consistent steps toward your dream placement.
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowRecModal(true)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs"
-                >
-                  View Recommendation
-                </button>
               </div>
 
-              {/* Card 2: Resume Status */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
-                <div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center mb-3">
-                    <FileText className="w-5 h-5 text-[#6C47FF]" />
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="text-xs font-bold text-[#6C47FF] bg-white px-3.5 py-1.5 rounded-full border border-purple-200 shadow-2xs">
+                  {completedMissionsCount} of {dailyMissions.length} Complete
+                </span>
+              </div>
+            </div>
+
+            {/* 4 Large Mission Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              {dailyMissions.map((mission, idx) => {
+                const Icon = mission.icon;
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white rounded-2xl p-4 sm:p-5 border border-purple-100 shadow-xs hover:shadow-md hover:border-purple-200 transition-all flex flex-col justify-between space-y-4"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center shrink-0">
+                          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+
+                        <span
+                          className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                            mission.completed
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : mission.statusLabel === 'In Progress'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-purple-50 text-[#6C47FF] border-purple-200'
+                          }`}
+                        >
+                          {mission.completed && <CheckCircle2 className="w-3 h-3 inline mr-1 text-emerald-600" />}
+                          {mission.statusLabel}
+                        </span>
+                      </div>
+
+                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                        {mission.tag}
+                      </span>
+                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug truncate">
+                        {mission.title}
+                      </h3>
+                      <p className="text-xs text-gray-600 mt-1.5 font-medium line-clamp-2 leading-relaxed">
+                        {mission.subtitle}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => navigate(mission.path)}
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>{mission.actionLabel}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                    Resume Status
-                  </span>
-                  {latestResume ? (
-                    <>
-                      <h3 className="text-sm font-extrabold text-emerald-600 leading-snug">
-                        ATS Score: {latestResume.atsScore || 0}%
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
-                        {latestResume.targetRole ? `Target: ${latestResume.targetRole}` : (latestResume.fileName || 'Resume analyzed')}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
-                        No Resume Analyzed
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
-                        Upload your resume to get instant ATS match scoring & feedback.
-                      </p>
-                    </>
-                  )}
-                </div>
-                <button
-                  onClick={() => navigate('/resume-analyzer')}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs"
-                >
-                  {latestResume ? 'Improve Resume' : 'Analyze Resume'}
-                </button>
-              </div>
-
-              {/* Card 3: Mock Interview */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
-                <div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center mb-3">
-                    <Mic className="w-5 h-5 text-[#6C47FF]" />
-                  </div>
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                    Mock Interview
-                  </span>
-                  {upcomingInterview ? (
-                    <>
-                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug line-clamp-1">
-                        {upcomingInterview.topic || 'Interview Session'}
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
-                        {upcomingInterview.status === 'active'
-                          ? 'Active session in progress'
-                          : upcomingInterview.feedback?.score !== undefined
-                            ? `Last Score: ${upcomingInterview.feedback.score}% • ${upcomingInterview.type || 'Technical'}`
-                            : `${upcomingInterview.type || 'Technical'} Round completed`}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
-                        No Sessions Yet
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
-                        Simulate live technical & HR interview rounds with AI.
-                      </p>
-                    </>
-                  )}
-                </div>
-                <button
-                  onClick={() => navigate('/mock-interview')}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs"
-                >
-                  {upcomingInterview?.status === 'active' ? 'Resume Session' : 'Start Mock Interview'}
-                </button>
-              </div>
-
-              {/* Card 4: Roadmap Progress */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
-                <div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center mb-3">
-                    <Sparkles className="w-5 h-5 text-[#6C47FF]" />
-                  </div>
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                    Study Planner Progress
-                  </span>
-                  {tasks.length > 0 ? (
-                    <>
-                      <h3 className="text-sm font-extrabold text-emerald-600 leading-snug">
-                        {completedTasksCount} of {tasks.length} Completed
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
-                        {tasks.length - completedTasksCount > 0
-                          ? `${tasks.length - completedTasksCount} pending tasks in your roadmap.`
-                          : 'All scheduled tasks completed! Great work.'}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
-                        Plan Your Roadmap
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-2 font-medium line-clamp-2">
-                        Create study tasks and milestone roadmaps to ace placements.
-                      </p>
-                    </>
-                  )}
-                </div>
-                <button
-                  onClick={() => navigate('/study-planner')}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs"
-                >
-                  {tasks.length > 0 ? 'Continue Learning' : 'Create Study Plan'}
-                </button>
-              </div>
-
+                );
+              })}
             </div>
           </div>
 
-          {/* ── UPCOMING SESSIONS & PREPARATION OVERVIEW PANEL ── */}
-          <div className="purple-panel bg-[#E8DEFD] border border-[#D7C7FE] rounded-3xl p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-extrabold text-[#1A1A2E] tracking-tight">
-              Upcoming Sessions & Action Items
-            </h2>
-
-            {/* Grid of 3 Independent Dedicated Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-              {/* Dedicated Card 1: Study Planner (Multi-task support) */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-3">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-[#6C47FF] text-white flex items-center justify-center shrink-0">
-                      <CalendarIcon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                        Study Planner
-                      </span>
-                      <span className="text-xs font-extrabold text-[#1A1A2E]">
-                        {upcomingTasks.length > 0 ? `${upcomingTasks.length} Upcoming Tasks` : 'Planner'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {upcomingTasks.length > 0 ? (
-                    <div className="space-y-2 mt-3 divide-y divide-gray-100">
-                      {upcomingTasks.slice(0, 2).map((t, idx) => (
-                        <div key={t._id || idx} className={idx > 0 ? 'pt-2' : ''}>
-                          <h3 className="text-xs font-black text-[#1A1A2E] truncate">
-                            {t.title}
-                          </h3>
-                          <p className="text-[11px] font-bold text-[#6C47FF] mt-0.5">
-                            {t.dueDate ? (
-                              new Date(t.dueDate).toDateString() === new Date().toDateString()
-                                ? 'Today'
-                                : new Date(t.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                            ) : (
-                              'Scheduled'
-                            )}
-                            {t.category ? ` • ${t.category}` : ''}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="mt-3 space-y-1">
-                      <h3 className="text-xs font-bold text-gray-700">
-                        No upcoming sessions scheduled.
-                      </h3>
-                      <p className="text-[11px] text-gray-500 font-medium">
-                        Schedule study tasks in your Study Planner.
-                      </p>
-                    </div>
-                  )}
+          {/* ── YOUR LEARNING RHYTHM SECTION (Directly below Today's Mission) ── */}
+          <div className="purple-panel bg-[#E8DEFD] border border-[#D7C7FE] rounded-3xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 shadow-sm">
+            
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-200/60 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#6C47FF] text-white flex items-center justify-center shadow-xs shrink-0">
+                  <Flame className="w-5 h-5" />
                 </div>
-
-                <button
-                  onClick={() => navigate('/study-planner')}
-                  className="w-full py-2 px-3 rounded-xl border border-purple-200 text-[#1A1A2E] text-xs font-bold hover:bg-purple-50 transition-all text-center mt-2"
-                >
-                  Go to Study Planner
-                </button>
+                <div>
+                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A1A2E] tracking-tight">
+                    Your Learning Rhythm
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-gray-600 font-medium">
+                    Show your learning consistency and study activity.
+                  </p>
+                </div>
               </div>
 
-              {/* Dedicated Card 2: DSA Practice Overview */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-3">
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="text-xs font-bold text-[#6C47FF] bg-white px-3.5 py-1.5 rounded-full border border-purple-200 shadow-2xs">
+                  {activeDaysCount} of 7 Days Active
+                </span>
+              </div>
+            </div>
+
+            {/* 3 Balanced Sub-Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
+              
+              {/* 1. Weekly Activity Heatmap */}
+              <div className="md:col-span-5 bg-white rounded-2xl p-4 sm:p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-3 sm:space-y-4">
                 <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center shrink-0">
-                      <Code2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                        DSA Practice
-                      </span>
-                      <span className="text-xs font-extrabold text-[#1A1A2E]">
-                        {pendingDSA.length > 0 ? `${pendingDSA.length} Pending Problems` : `${questions.length} Problems Logged`}
-                      </span>
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                      7-Day Activity
+                    </span>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-purple-100 text-[#6C47FF] flex items-center justify-center shrink-0">
+                      <Activity className="w-4 h-4" />
                     </div>
                   </div>
-
-                  {pendingDSA.length > 0 ? (
-                    <div className="space-y-2 mt-3 divide-y divide-gray-100">
-                      {pendingDSA.slice(0, 2).map((q, idx) => (
-                        <div key={q._id || idx} className={idx > 0 ? 'pt-2' : ''}>
-                          <h3 className="text-xs font-black text-[#1A1A2E] truncate">
-                            {q.title}
-                          </h3>
-                          <p className="text-[11px] font-bold text-emerald-600 mt-0.5">
-                            {q.difficulty} • {q.topic || 'DSA'} ({q.platform || 'LeetCode'})
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="mt-3 space-y-1">
-                      <h3 className="text-xs font-bold text-gray-700">
-                        {questions.length > 0 ? 'All pending DSA problems completed!' : 'No upcoming DSA tasks.'}
-                      </h3>
-                      <p className="text-[11px] text-gray-500 font-medium">
-                        Add target DSA problems to your tracker.
-                      </p>
-                    </div>
-                  )}
+                  <h3 className="text-sm font-extrabold text-[#1A1A2E]">Weekly Activity Heatmap</h3>
+                  <p className="text-xs text-gray-600 mt-1 font-medium">
+                    Actual study sessions & tasks over the last 7 days.
+                  </p>
                 </div>
 
-                <button
-                  onClick={() => navigate('/dsa-tracker')}
-                  className="w-full py-2 px-3 rounded-xl border border-purple-200 text-[#1A1A2E] text-xs font-bold hover:bg-purple-50 transition-all text-center mt-2"
-                >
-                  Open DSA Tracker
-                </button>
+                {/* 7 Day Blocks */}
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2 pt-1">
+                  {weeklyDays.map((day, idx) => (
+                    <div key={idx} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
+                      <span className={`text-[10px] sm:text-[11px] font-bold ${day.isToday ? 'text-[#6C47FF]' : 'text-gray-500'} truncate`}>
+                        {day.dayLabel}
+                      </span>
+                      <div
+                        className={`w-full aspect-square rounded-lg sm:rounded-xl flex items-center justify-center text-[10px] sm:text-xs font-extrabold transition-all border ${
+                          day.isActive
+                            ? 'bg-[#6C47FF] text-white border-[#5A36EC] shadow-xs'
+                            : 'bg-[#F6F2FE] text-gray-400 border-purple-100/60'
+                        } ${day.isToday ? 'ring-2 ring-[#6C47FF] ring-offset-1 sm:ring-offset-2' : ''}`}
+                        title={`${day.dayLabel} (${day.dateStr}): ${day.count} activities`}
+                      >
+                        {day.isActive ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                        ) : (
+                          <span className="text-[10px] sm:text-[11px] font-bold opacity-70">{day.dayNum}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-gray-500 font-medium pt-2 border-t border-purple-50">
+                  <span className="truncate pr-2">{activeDaysCount === 0 ? 'No activity this week' : `${activeDaysCount} active days recorded`}</span>
+                  <span className="flex items-center gap-1.5 text-[#6C47FF] font-bold shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-[#6C47FF]"></span> Active
+                  </span>
+                </div>
               </div>
 
-              {/* Dedicated Card 3: Mock Interview Overview */}
-              <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-3">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                      <Mic className="w-5 h-5" />
+              {/* 2. Streak & Consistency Metrics */}
+              <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-3 sm:gap-3.5">
+                {/* Current Streak */}
+                <div className="bg-white rounded-2xl p-4 border border-purple-100 shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                      Current Streak
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-0.5">
+                      <span className="text-xl sm:text-2xl font-black text-[#1A1A2E]">{currentStreak}</span>
+                      <span className="text-xs font-bold text-gray-500">Days</span>
                     </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                        Mock Interview
-                      </span>
-                      <span className="text-xs font-extrabold text-[#1A1A2E]">
-                        {upcomingInterview?.status === 'active' ? 'Active Session' : 'AI Recruiter'}
-                      </span>
-                    </div>
+                    <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium mt-0.5">
+                      {currentStreak > 0 ? `Best: ${longestStreak} days` : 'Practice today to start'}
+                    </p>
                   </div>
-
-                  {upcomingInterview ? (
-                    <div className="mt-3 space-y-1">
-                      <h3 className="text-xs font-black text-[#1A1A2E] truncate">
-                        {upcomingInterview.topic || 'Technical Interview'}
-                      </h3>
-                      <p className="text-[11px] font-bold text-blue-600">
-                        {upcomingInterview.type || 'Technical'} Round • {upcomingInterview.status === 'active' ? 'In Progress' : 'Last Session'}
-                      </p>
-                      <p className="text-[11px] text-gray-500 font-medium line-clamp-1">
-                        {upcomingInterview.status === 'active'
-                          ? 'Session ready to continue'
-                          : upcomingInterview.feedback?.score !== null && upcomingInterview.feedback?.score !== undefined
-                            ? `Last Score: ${upcomingInterview.feedback.score}%`
-                            : 'Ready for new evaluation'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-3 space-y-1">
-                      <h3 className="text-xs font-bold text-gray-700">
-                        No interview scheduled.
-                      </h3>
-                      <p className="text-[11px] text-gray-500 font-medium">
-                        Start a mock interview with AI Recruiter.
-                      </p>
-                    </div>
-                  )}
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${currentStreak > 0 ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-400'}`}>
+                    <Flame className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => navigate('/mock-interview')}
-                  className="w-full py-2 px-3 rounded-xl border border-purple-200 text-[#1A1A2E] text-xs font-bold hover:bg-purple-50 transition-all text-center mt-2"
-                >
-                  {upcomingInterview?.status === 'active' ? 'Resume Session' : 'Start Mock Interview'}
-                </button>
+                {/* Study Consistency */}
+                <div className="bg-white rounded-2xl p-4 border border-purple-100 shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                      Study Consistency
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-0.5">
+                      <span className="text-xl sm:text-2xl font-black text-[#6C47FF]">{consistencyPercentage}%</span>
+                    </div>
+                    <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium mt-0.5">
+                      {activeDaysCount}/7 active days this week
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-purple-100 text-[#6C47FF] flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. AI Insight Card */}
+              <div className="md:col-span-4 bg-white rounded-2xl p-4 sm:p-5 border border-purple-100 shadow-xs flex flex-col justify-between space-y-3 sm:space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#6C47FF] uppercase tracking-wider flex items-center gap-1.5 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">
+                      <Sparkles className="w-3.5 h-3.5 text-[#6C47FF]" />
+                      AI Rhythm Insight
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-500">Realtime</span>
+                  </div>
+
+                  <h3 className="text-sm font-extrabold text-[#1A1A2E] leading-snug">
+                    {currentStreak >= 3 || activeDaysCount >= 4
+                      ? 'Consistent Preparation Momentum'
+                      : activeDaysCount >= 1
+                        ? 'Building Preparation Habit'
+                        : 'Kickstart Your Rhythm'}
+                  </h3>
+
+                  <p className="text-xs text-gray-600 mt-2 font-medium leading-relaxed bg-[#F8F5FF] p-3 rounded-xl border border-purple-100/60">
+                    "{getAIInsight()}"
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-purple-50 flex items-center justify-between">
+                  <span className="text-[10px] sm:text-[11px] text-gray-500 font-medium">
+                    Calculated from actual study data
+                  </span>
+                  <Link
+                    to="/analytics"
+                    className="text-xs font-bold text-[#6C47FF] hover:underline flex items-center gap-1"
+                  >
+                    <span>View Analytics</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
               </div>
 
             </div>
@@ -506,57 +492,10 @@ const DashboardPage = () => {
 
         </main>
       </div>
-
-      {/* AI Recommendation Modal (Dynamic) */}
-      {showRecModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white border border-purple-100 rounded-3xl max-w-lg w-full p-6 shadow-xl space-y-5 animate-fade-in">
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-[#6C47FF] flex items-center justify-center shrink-0">
-                <Bot className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-xs font-black uppercase text-[#6C47FF] tracking-wider">AI Recommendation Plan</span>
-                <h3 className="text-xl font-black text-[#1A1A2E] mt-0.5">{aiRec.modalTitle}</h3>
-              </div>
-            </div>
-
-            <div className="space-y-3 text-xs text-slate-700 leading-relaxed bg-purple-50/60 p-4 rounded-2xl border border-purple-100">
-              <p className="font-semibold text-slate-900">
-                Actionable roadmap based on your current preparation status:
-              </p>
-              <ul className="space-y-2 list-disc list-inside text-gray-600">
-                {aiRec.modalPoints.map((point, index) => (
-                  <li key={index}>{point}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                onClick={() => setShowRecModal(false)}
-                className="px-5 py-2.5 rounded-2xl border border-purple-200 text-[#1A1A2E] text-xs font-bold hover:bg-purple-50 transition-all"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  setShowRecModal(false);
-                  navigate(aiRec.actionPath);
-                }}
-                className="px-6 py-2.5 rounded-2xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-sm"
-              >
-                {aiRec.actionLabel} →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <FloatingAIAssistant />
     </div>
   );
 };
 
 export default DashboardPage;
+
 

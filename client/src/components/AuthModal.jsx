@@ -200,12 +200,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', resetToken = '' }) 
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl border border-white/40 dark:border-white/10 p-7 sm:p-9 rounded-3xl shadow-2xl my-auto z-10 overflow-hidden"
+          className="relative w-full max-w-md bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl border border-white/40 dark:border-white/10 p-5 sm:p-8 rounded-3xl shadow-2xl my-auto z-10 overflow-hidden"
         >
           {/* Close X Button */}
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors z-20"
+            className="absolute top-4 sm:top-5 right-4 sm:right-5 text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors z-20 cursor-pointer"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />

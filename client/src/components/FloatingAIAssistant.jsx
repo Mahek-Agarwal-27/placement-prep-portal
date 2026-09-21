@@ -61,22 +61,24 @@ const FloatingAIAssistant = () => {
   if (!user) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end pointer-events-none">
       {/* Floating Toggle Button */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 group">
+        <div className="relative group pointer-events-auto">
           {/* Glow Effect */}
-          <div className="absolute inset-0 rounded-full bg-violet-500/30 blur-xl scale-125 opacity-70 group-hover:opacity-100 transition duration-300" />
+          <div className="absolute inset-0 rounded-full bg-violet-500/30 blur-lg sm:blur-xl scale-110 sm:scale-125 opacity-70 group-hover:opacity-100 transition duration-300" />
 
           <button
             onClick={() => setIsOpen(true)}
-            className="relative w-14 h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center border border-white/20 shadow-lg hover:scale-110 transition-all duration-300"
+            className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center border border-white/20 shadow-lg hover:scale-105 sm:hover:scale-110 transition-all duration-300 cursor-pointer"
+            aria-label="Open AI Assistant"
+            title="Open AI Assistant"
           >
-            <Sparkles className="w-6 h-6" />
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
 
-          {/* Tooltip */}
-          <div className="absolute right-16 top-1/2 -translate-y-1/2 opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none">
+          {/* Desktop Tooltip (Hidden on mobile touch screens) */}
+          <div className="hidden sm:block absolute right-16 top-1/2 -translate-y-1/2 opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none">
             <div className="relative bg-[#111827]/95 backdrop-blur-md text-white px-4 py-2 rounded-xl border border-white/10 shadow-xl whitespace-nowrap">
               <p className="text-sm font-medium">✨ HireNova AI</p>
               <p className="text-xs text-gray-300">Your AI Placement Companion</p>
@@ -86,91 +88,90 @@ const FloatingAIAssistant = () => {
             </div>
           </div>
         </div>
-      )
-      }
+      )}
 
       {/* Chat Window Box */}
-      {
-        isOpen && (
-          <div className="w-[360px] max-w-[calc(100vw-32px)] h-[520px] max-h-[75vh] flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 animate-fade-in">
+      {isOpen && (
+        <div className="pointer-events-auto w-[360px] max-w-[calc(100vw-28px)] h-[480px] sm:h-[520px] max-h-[75vh] sm:max-h-[80vh] flex flex-col bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-purple-100 animate-fade-in">
 
-            {/* Header Bar */}
-            <div className="bg-white border-b border-slate-200 p-4 flex justify-between items-center">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-blue-50 border border-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-xs text-slate-900">HireNova AI Assistant</h3>
-                  <p className="text-[10px] text-slate-400">Placement Preparation Companion</p>
+          {/* Header Bar */}
+          <div className="bg-white border-b border-purple-100 p-3.5 sm:p-4 flex justify-between items-center shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-purple-50 border border-purple-100 text-[#6C47FF] rounded-xl flex items-center justify-center font-bold">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-xs text-slate-900">HireNova AI Assistant</h3>
+                <p className="text-[10px] text-gray-400 font-medium">Placement Preparation Companion</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              aria-label="Close Assistant"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3 bg-purple-50/20">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
+                    msg.sender === 'user'
+                      ? 'bg-[#6C47FF] text-white rounded-tr-none shadow-xs'
+                      : 'bg-white text-slate-800 border border-purple-100 rounded-tl-none shadow-xs'
+                  }`}
+                >
+                  {msg.sender === 'ai' ? (
+                    <div className="prose prose-sm max-w-none text-xs text-slate-800">
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    msg.text
+                  )}
                 </div>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-md transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            ))}
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-50">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${msg.sender === 'user'
-                      ? 'bg-blue-600 text-white rounded-tr-none shadow-sm'
-                      : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none shadow-sm'
-                      }`}
-                  >
-                    {msg.sender === 'ai' ? (
-                      <div className="prose prose-sm max-w-none text-xs text-slate-800">
-                        <ReactMarkdown>{msg.text}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      msg.text
-                    )}
-                  </div>
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-purple-100 rounded-2xl rounded-tl-none px-3.5 py-2.5 flex gap-1 items-center shadow-xs">
+                  <div className="w-1.5 h-1.5 bg-[#6C47FF] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 bg-[#6C47FF] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 bg-[#6C47FF] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-              ))}
-
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none px-3.5 py-2.5 flex gap-1 items-center shadow-sm">
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Form */}
-            <div className="p-3 bg-white border-t border-slate-200">
-              <form onSubmit={handleSend} className="relative flex items-center">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Ask about DSA, resumes, or interview prep..."
-                  disabled={isTyping}
-                  className="input-field text-xs pr-10 py-2"
-                />
-                <button
-                  type="submit"
-                  disabled={!inputValue.trim() || isTyping}
-                  className="absolute right-2 p-1.5 text-blue-600 disabled:text-slate-300 hover:text-blue-700 transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
-            </div>
-
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        )
-      }
-    </div >
+
+          {/* Input Form */}
+          <div className="p-3 bg-white border-t border-purple-100 shrink-0">
+            <form onSubmit={handleSend} className="relative flex items-center">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Ask about DSA, resumes, or interview prep..."
+                disabled={isTyping}
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-purple-200 text-xs font-medium outline-none focus:border-[#6C47FF] bg-white"
+              />
+              <button
+                type="submit"
+                disabled={!inputValue.trim() || isTyping}
+                className="absolute right-2 p-1.5 text-[#6C47FF] disabled:text-gray-300 hover:text-[#5A36EC] transition-colors cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -64,7 +64,7 @@ exports.updateNote = asyncHandler(async (req, res) => {
   res.status(200).json(successResponse(note, 'Note updated successfully'));
 });
 
-// @desc    Delete note
+// @desc    Delete single note
 // @route   DELETE /api/notes/:id
 // @access  Private
 exports.deleteNote = asyncHandler(async (req, res) => {
@@ -73,4 +73,12 @@ exports.deleteNote = asyncHandler(async (req, res) => {
     return res.status(404).json(errorResponse('Note not found'));
   }
   res.status(200).json(successResponse(null, 'Note deleted successfully'));
+});
+
+// @desc    Clear all notes for logged-in user
+// @route   DELETE /api/notes
+// @access  Private
+exports.clearAllNotes = asyncHandler(async (req, res) => {
+  await Note.deleteMany({ user: req.user.id });
+  res.status(200).json(successResponse(null, 'All notes cleared successfully'));
 });

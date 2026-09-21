@@ -4,6 +4,8 @@ const Question = require('../models/Question');
 const AIHistory = require('../models/AIHistory');
 const Interview = require('../models/Interview');
 const StudySession = require('../models/StudySession');
+const Task = require('../models/Task');
+const Activity = require('../models/Activity');
 const asyncHandler = require('../middleware/errorHandler');
 const { successResponse } = require('../utils/apiResponse');
 
@@ -178,3 +180,58 @@ exports.logStudySession = asyncHandler(async (req, res) => {
 
   res.status(201).json(successResponse(session, 'Study session logged successfully'));
 });
+
+// @desc    Reset user progress and placement analytics
+// @route   POST /api/analytics/reset or DELETE /api/analytics/reset
+// @access  Private
+exports.resetAnalytics = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const {
+    resetDsa = true,
+    resetTasks = true,
+    resetStudySessions = true,
+    resetStreak = true,
+    resetInterviews = true,
+    resetResumes = true,
+  } = req.body || {};
+
+  const operations = [];
+
+  if (resetDsa) {
+    operations.push(Question.updateMany({ user: userId }, { $set: { status: 'to-do', solvedAt: null } }));
+  }
+
+  if (resetTasks) {
+    operations.push(Task.updateMany({ user: userId }, { $set: { status: 'pending', completedAt: null } }));
+  }
+
+  if (resetStudySessions) {
+    operations.push(StudySession.deleteMany({ user: userId }));
+    operations.push(Activity.deleteMany({ user: userId }));
+  }
+
+  if (resetStreak) {
+    operations.push(
+      User.findByIdAndUpdate(userId, {
+        $set: {
+          'streak.currentStreak': 0,
+          'streak.longestStreak': 0,
+          'streak.lastActiveDate': null,
+        },
+      })
+    );
+  }
+
+  if (resetInterviews) {
+    operations.push(Interview.deleteMany({ user: userId }));
+  }
+
+  if (resetResumes) {
+    operations.push(Resume.deleteMany({ user: userId }));
+  }
+
+  await Promise.all(operations);
+
+  res.status(200).json(successResponse(null, 'Progress and placement analytics reset successfully'));
+});
+

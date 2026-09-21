@@ -15,7 +15,9 @@ import {
   Lightbulb, 
   Layers, 
   Loader2, 
-  ArrowRight 
+  ArrowRight,
+  History,
+  X 
 } from 'lucide-react';
 
 const ANALYSIS_STEPS = [
@@ -39,6 +41,7 @@ const ResumeAnalyzerPage = () => {
   
   // View State (currently viewed analysis)
   const [activeAnalysis, setActiveAnalysis] = useState(null);
+  const [showHistoryMobile, setShowHistoryMobile] = useState(false);
   
   const fileInputRef = useRef(null);
   const stepTimerRef = useRef(null);
@@ -182,16 +185,33 @@ const ResumeAnalyzerPage = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Navbar />
 
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex overflow-hidden relative">
         
+        {/* Mobile History Backdrop Overlay */}
+        {showHistoryMobile && (
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+            onClick={() => setShowHistoryMobile(false)}
+          />
+        )}
+
         {/* Left Sidebar: Scan History */}
-        <aside className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
-          <div className="p-4 border-b border-slate-200">
+        <aside className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0 overflow-y-auto ${
+          showHistoryMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
+        }`}>
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-2">
             <button 
-              onClick={() => setActiveAnalysis(null)} 
-              className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5"
+              onClick={() => { setActiveAnalysis(null); setShowHistoryMobile(false); }} 
+              className="btn-primary flex-1 flex items-center justify-center gap-2 text-xs py-2.5"
             >
               <Plus className="w-4 h-4" /> New Resume Scan
+            </button>
+            <button
+              onClick={() => setShowHistoryMobile(false)}
+              className="md:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg"
+              title="Close history"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
           
@@ -217,7 +237,7 @@ const ResumeAnalyzerPage = () => {
                 {history.map(item => (
                   <button 
                     key={item._id}
-                    onClick={() => setActiveAnalysis(item)}
+                    onClick={() => { setActiveAnalysis(item); setShowHistoryMobile(false); }}
                     className={`w-full text-left p-3 rounded-xl transition-all border flex flex-col gap-1.5 relative group ${
                       activeAnalysis?._id === item._id 
                         ? 'bg-blue-50/70 border-blue-200' 
@@ -253,41 +273,41 @@ const ResumeAnalyzerPage = () => {
         </aside>
 
         {/* Main Content Area */}
-        <section className="flex-1 overflow-y-auto p-6 md:p-8 relative bg-slate-50">
+        <section className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 relative bg-[#EFE9FE]/30">
           
           {!activeAnalysis ? (
             isAnalyzing ? (
               /* Step Progress Widget */
-              <div className="max-w-md mx-auto my-12 bg-white border border-slate-200 p-8 rounded-2xl shadow-sm text-center space-y-6 animate-fade-in">
+              <div className="max-w-md mx-auto my-12 bg-white border border-purple-100 p-8 rounded-3xl shadow-sm text-center space-y-6 animate-fade-in">
                 <div className="flex justify-center">
-                  <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-purple-50 text-[#6C47FF] border border-purple-100 flex items-center justify-center">
                     <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Resume Intelligence AI</h2>
-                  <p className="text-xs text-slate-500 mt-1">Analyzing content & keywords with Gemini AI...</p>
+                  <h2 className="text-lg font-bold text-[#1A1A2E]">Resume Intelligence AI</h2>
+                  <p className="text-xs text-gray-500 mt-1">Analyzing content & keywords with Gemini AI...</p>
                 </div>
                 
-                <div className="space-y-2.5 text-left border-t border-slate-100 pt-5">
+                <div className="space-y-2.5 text-left border-t border-purple-100 pt-5">
                   {ANALYSIS_STEPS.map((step) => {
                     const StepIcon = step.icon;
                     const isActive = currentStep === step.id;
                     const isCompleted = currentStep > step.id;
                     return (
-                      <div key={step.id} className={`flex items-center justify-between p-3 rounded-lg border transition-all text-xs ${
-                        isActive ? 'bg-purple-50/60 border-purple-200 text-purple-900 font-medium' :
-                        isCompleted ? 'bg-slate-50 border-slate-100 text-slate-700' : 'bg-white border-transparent text-slate-400 opacity-60'
+                      <div key={step.id} className={`flex items-center justify-between p-3 rounded-xl border transition-all text-xs ${
+                        isActive ? 'bg-purple-50/80 border-purple-200 text-purple-900 font-bold' :
+                        isCompleted ? 'bg-slate-50 border-purple-100 text-slate-700' : 'bg-white border-transparent text-slate-400 opacity-60'
                       }`}>
                         <div className="flex items-center gap-2.5">
-                          <StepIcon className={`w-4 h-4 ${isActive ? 'text-purple-600' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`} />
+                          <StepIcon className={`w-4 h-4 ${isActive ? 'text-[#6C47FF]' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`} />
                           <span>{step.label}</span>
                         </div>
                         <div>
                           {isCompleted ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                           ) : isActive ? (
-                            <span className="w-2 h-2 bg-purple-600 rounded-full animate-ping"></span>
+                            <span className="w-2 h-2 bg-[#6C47FF] rounded-full animate-ping"></span>
                           ) : null}
                         </div>
                       </div>
@@ -297,17 +317,31 @@ const ResumeAnalyzerPage = () => {
               </div>
             ) : (
               /* Upload Form UI */
-              <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-                <div className="text-center space-y-1.5">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-600" /> AI Resume Intelligence
+              <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6 animate-fade-in">
+                
+                {/* Top Row: AI Resume Intelligence Pill on Left & Past Scans on Right (Mobile), Centered on Desktop */}
+                <div className="flex items-center justify-between md:justify-center gap-3 w-full">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-purple-100/70 border border-purple-200 text-[#6C47FF] text-xs font-bold shrink-0">
+                    <Sparkles className="w-3.5 h-3.5 text-[#6C47FF]" /> AI Resume Intelligence
                   </div>
-                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Resume Intelligence AI</h1>
-                  <p className="text-xs text-slate-500">Upload your PDF resume to receive a comprehensive ATS score and AI improvements.</p>
+
+                  <button
+                    onClick={() => setShowHistoryMobile(true)}
+                    className="md:hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-purple-200 rounded-xl shadow-xs hover:bg-purple-50 shrink-0"
+                    title="View Past Scans"
+                  >
+                    <History className="w-3.5 h-3.5 text-[#6C47FF]" /> Past Scans ({history.length})
+                  </button>
+                </div>
+
+                {/* Main Heading & Subtitle */}
+                <div className="text-center space-y-1.5 pt-1">
+                  <h1 className="text-2xl sm:text-3xl font-black text-[#1A1A2E] tracking-tight">Resume Intelligence AI</h1>
+                  <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto font-medium">Upload your PDF resume to receive a comprehensive ATS score and AI improvements.</p>
                 </div>
 
                 {error && (
-                  <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                  <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span>{error}</span>
                   </div>
@@ -317,10 +351,10 @@ const ResumeAnalyzerPage = () => {
                 <div 
                   onDragOver={(e) => !isAnalyzing && handleDragOver(e)}
                   onDrop={(e) => !isAnalyzing && handleDrop(e)}
-                  className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all bg-white ${
+                  className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center transition-all bg-white shadow-xs ${
                     file 
-                      ? 'border-emerald-300 bg-emerald-50/20 cursor-pointer' 
-                      : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50/50 cursor-pointer'
+                      ? 'border-emerald-400 bg-emerald-50/30 cursor-pointer' 
+                      : 'border-purple-200 hover:border-purple-400 hover:bg-purple-50/40 cursor-pointer'
                   }`}
                   onClick={() => fileInputRef.current.click()}
                 >
@@ -335,15 +369,17 @@ const ResumeAnalyzerPage = () => {
                   {file ? (
                     <div className="text-center space-y-2">
                       <FileCheck className="w-10 h-10 text-emerald-600 mx-auto" />
-                      <p className="font-semibold text-xs text-slate-900">{file.name}</p>
-                      <p className="text-[11px] text-slate-400">Click or drop to replace file</p>
+                      <p className="font-bold text-xs text-[#1A1A2E]">{file.name}</p>
+                      <p className="text-[11px] text-gray-400 font-medium">Click or drop to replace file</p>
                     </div>
                   ) : (
-                    <div className="text-center space-y-2">
-                      <Upload className="w-8 h-8 text-slate-400 mx-auto" />
+                    <div className="text-center space-y-2.5">
+                      <div className="w-12 h-12 rounded-2xl bg-purple-50 text-[#6C47FF] flex items-center justify-center mx-auto border border-purple-100">
+                        <Upload className="w-6 h-6" />
+                      </div>
                       <div>
-                        <p className="font-medium text-xs text-slate-800">Drop your PDF resume here</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">or click to browse files</p>
+                        <p className="font-bold text-sm text-[#1A1A2E]">Drop your PDF resume here</p>
+                        <p className="text-xs text-gray-400 mt-0.5 font-medium">or click to browse files</p>
                       </div>
                     </div>
                   )}
@@ -351,13 +387,13 @@ const ResumeAnalyzerPage = () => {
 
                 {/* Target JD */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block">
                     Target Job Description (Optional)
                   </label>
                   <textarea 
                     value={jobDescription}
                     onChange={(e) => setJobDescription(e.target.value)}
-                    className="input-field min-h-[100px] resize-y text-xs"
+                    className="w-full min-h-[110px] p-4 rounded-2xl border border-purple-200 text-xs font-medium outline-none focus:border-[#6C47FF] bg-white resize-y shadow-xs"
                     placeholder="Paste target job description to match required keywords and role skills..."
                   ></textarea>
                 </div>
@@ -366,9 +402,9 @@ const ResumeAnalyzerPage = () => {
                 <button 
                   onClick={handleAnalyze} 
                   disabled={!file}
-                  className="btn-ai w-full py-3 text-sm shadow-sm"
+                  className="w-full py-3 sm:py-3.5 rounded-2xl bg-[#6C47FF] text-white font-bold text-sm hover:bg-[#5A36EC] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  Analyze Resume with AI
+                  <Sparkles className="w-4 h-4" /> Analyze Resume with AI
                 </button>
               </div>
             )

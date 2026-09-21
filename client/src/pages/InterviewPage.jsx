@@ -16,7 +16,9 @@ import {
   Loader2, 
   Check,
   ChevronDown,
-  Trash2
+  Trash2,
+  History,
+  X
 } from 'lucide-react';
 
 // Predefined Topics Lists
@@ -69,6 +71,7 @@ const InterviewPage = () => {
   const [customTopic, setCustomTopic] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showHistoryMobile, setShowHistoryMobile] = useState(false);
 
   const handleTypeChange = (newType) => {
     setType(newType);
@@ -300,6 +303,7 @@ const InterviewPage = () => {
     if (!session || !session._id) return;
     setError('');
     setActiveSession(session);
+    setShowHistoryMobile(false);
     if (session.status === 'active') {
       sessionStorage.setItem('hirenova_active_interview_id', session._id);
     } else {
@@ -327,7 +331,13 @@ const InterviewPage = () => {
     if (e && typeof e.stopPropagation === 'function') {
       e.stopPropagation();
     }
-    if (!window.confirm('Delete this past interview session?')) return;
+    const sessionToDelete = history.find(s => s._id === id) || (activeSession?._id === id ? activeSession : null);
+    const isSessionActive = sessionToDelete?.status === 'active';
+    const confirmMsg = isSessionActive
+      ? 'Are you sure you want to discard and delete this in-progress interview session?'
+      : 'Are you sure you want to delete this interview session?';
+
+    if (!window.confirm(confirmMsg)) return;
     try {
       await interviewService.deleteInterview(id);
       if (activeSession?._id === id) {
@@ -336,6 +346,7 @@ const InterviewPage = () => {
       }
       fetchHistory();
     } catch (err) {
+      console.error('Failed to delete interview:', err);
       setError('Failed to delete interview session.');
     }
   };
@@ -358,16 +369,33 @@ const InterviewPage = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Navbar />
 
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex overflow-hidden relative">
         
+        {/* Mobile History Backdrop Overlay */}
+        {showHistoryMobile && (
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+            onClick={() => setShowHistoryMobile(false)}
+          />
+        )}
+
         {/* Left Sidebar: Session History */}
-        <aside className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
-          <div className="p-4 border-b border-slate-200">
+        <aside className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0 overflow-y-auto ${
+          showHistoryMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
+        }`}>
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-2">
             <button 
-              onClick={() => { setActiveSession(null); setError(''); }} 
-              className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5"
+              onClick={() => { setActiveSession(null); setError(''); setShowHistoryMobile(false); }} 
+              className="btn-primary flex-1 flex items-center justify-center gap-2 text-xs py-2.5"
             >
               <Plus className="w-4 h-4" /> Start New Interview
+            </button>
+            <button
+              onClick={() => setShowHistoryMobile(false)}
+              className="md:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg"
+              title="Close history"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
           
@@ -418,8 +446,9 @@ const InterviewPage = () => {
 
                         <button
                           onClick={(e) => handleDeleteSession(e, item._id)}
-                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded transition-opacity"
-                          title="Delete interview session"
+                          className="opacity-80 sm:opacity-0 sm:group-hover:opacity-100 text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all cursor-pointer"
+                          title={`Delete ${item.status === 'active' ? 'in-progress' : 'past'} interview`}
+                          aria-label="Delete interview"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -441,7 +470,7 @@ const InterviewPage = () => {
         <section className="flex-1 flex flex-col bg-slate-50 overflow-hidden relative">
           
           {error && (
-            <div className="p-3 mx-6 mt-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center shrink-0 z-10 flex items-center justify-center gap-2">
+            <div className="p-3 mx-4 sm:mx-6 mt-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center shrink-0 z-10 flex items-center justify-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -456,119 +485,129 @@ const InterviewPage = () => {
             </div>
           ) : !activeSession ? (
             /* Setup Screen */
-            <div className="max-w-md mx-auto my-auto p-6 space-y-6 animate-fade-in w-full bg-white border border-slate-200 rounded-2xl shadow-sm">
-              <div className="text-center space-y-1.5">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-2 border border-blue-100">
-                  <Bot className="w-6 h-6" />
-                </div>
-                <h1 className="text-xl font-bold text-slate-900">AI Mock Recruiter</h1>
-                <p className="text-xs text-slate-500">Practice real-time technical and behavioral interview questions with Gemini AI feedback.</p>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col">
+              <div className="md:hidden flex justify-end mb-3 shrink-0">
+                <button
+                  onClick={() => setShowHistoryMobile(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl shadow-xs hover:bg-slate-50"
+                >
+                  <History className="w-3.5 h-3.5 text-blue-600" /> Past Interviews ({history.length})
+                </button>
               </div>
-
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Interview Type</label>
-                  <select 
-                    value={type} 
-                    onChange={(e) => handleTypeChange(e.target.value)}
-                    className="input-field py-2 text-xs"
-                  >
-                    <option value="Technical">Technical Round</option>
-                    <option value="Behavioral">Behavioral / HR Round</option>
-                    <option value="System Design">System Design Round</option>
-                  </select>
+              <div className="max-w-md mx-auto my-auto p-5 sm:p-6 space-y-6 animate-fade-in w-full bg-white border border-slate-200 rounded-2xl shadow-sm">
+                <div className="text-center space-y-1.5">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-2 border border-blue-100">
+                    <Bot className="w-6 h-6" />
+                  </div>
+                  <h1 className="text-xl font-bold text-slate-900">AI Mock Recruiter</h1>
+                  <p className="text-xs text-slate-500">Practice real-time technical and behavioral interview questions with Gemini AI feedback.</p>
                 </div>
 
-                {type !== 'Behavioral' ? (
-                  <div className="space-y-1.5" ref={dropdownRef}>
-                    <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                      {type === 'System Design' ? 'System Design Topic' : 'Focus Area / Tech Stack'} <span className="text-rose-500">*</span>
-                    </label>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Interview Type</label>
+                    <select 
+                      value={type} 
+                      onChange={(e) => handleTypeChange(e.target.value)}
+                      className="input-field py-2 text-xs"
+                    >
+                      <option value="Technical">Technical Round</option>
+                      <option value="Behavioral">Behavioral / HR Round</option>
+                      <option value="System Design">System Design Round</option>
+                    </select>
+                  </div>
 
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setDropdownOpen(!dropdownOpen)}
-                        className="input-field py-2 text-xs w-full text-left flex justify-between items-center bg-white border border-slate-200 rounded-xl"
-                      >
-                        <span className={selectedTopic ? 'text-slate-900 font-medium' : 'text-slate-400'}>
-                          {selectedTopic || (type === 'System Design' ? 'Select System Design Topic...' : 'Select Focus Area / Tech Stack...')}
-                        </span>
-                        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
-                      </button>
+                  {type !== 'Behavioral' ? (
+                    <div className="space-y-1.5" ref={dropdownRef}>
+                      <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                        {type === 'System Design' ? 'System Design Topic' : 'Focus Area / Tech Stack'} <span className="text-rose-500">*</span>
+                      </label>
 
-                      {dropdownOpen && (
-                        <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-hidden flex flex-col">
-                          <div className="p-2 border-b border-slate-100 bg-slate-50">
-                            <input
-                              type="text"
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              placeholder="Search topic..."
-                              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500"
-                              autoFocus
-                            />
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                          className="input-field py-2 text-xs w-full text-left flex justify-between items-center bg-white border border-slate-200 rounded-xl"
+                        >
+                          <span className={selectedTopic ? 'text-slate-900 font-medium' : 'text-slate-400'}>
+                            {selectedTopic || (type === 'System Design' ? 'Select System Design Topic...' : 'Select Focus Area / Tech Stack...')}
+                          </span>
+                          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                        </button>
+
+                        {dropdownOpen && (
+                          <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-hidden flex flex-col">
+                            <div className="p-2 border-b border-slate-100 bg-slate-50">
+                              <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search topic..."
+                                className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500"
+                                autoFocus
+                              />
+                            </div>
+
+                            <div className="overflow-y-auto max-h-48 divide-y divide-slate-50">
+                              {filteredTopics.length > 0 ? (
+                                filteredTopics.map((t) => (
+                                  <button
+                                    key={t}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedTopic(t);
+                                      setDropdownOpen(false);
+                                      setSearchQuery('');
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 transition-colors flex items-center justify-between ${
+                                      selectedTopic === t ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-700'
+                                    }`}
+                                  >
+                                    <span>{t}</span>
+                                    {selectedTopic === t && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="px-3 py-2 text-xs text-slate-400 text-center">No matching topics found</div>
+                              )}
+                            </div>
                           </div>
+                        )}
+                      </div>
 
-                          <div className="overflow-y-auto max-h-48 divide-y divide-slate-50">
-                            {filteredTopics.length > 0 ? (
-                              filteredTopics.map((t) => (
-                                <button
-                                  key={t}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedTopic(t);
-                                    setDropdownOpen(false);
-                                    setSearchQuery('');
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 transition-colors flex items-center justify-between ${
-                                    selectedTopic === t ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-700'
-                                  }`}
-                                >
-                                  <span>{t}</span>
-                                  {selectedTopic === t && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                                </button>
-                              ))
-                            ) : (
-                              <div className="px-3 py-2 text-xs text-slate-400 text-center">No matching topics found</div>
-                            )}
-                          </div>
+                      {selectedTopic === 'Other (Custom Topic)' && (
+                        <div className="pt-2">
+                          <label className="text-[11px] font-semibold text-slate-600 mb-1 block">Enter Custom Topic *</label>
+                          <input
+                            type="text"
+                            value={customTopic}
+                            onChange={(e) => setCustomTopic(e.target.value)}
+                            placeholder="e.g. Flutter, Go, Rust, SAP, Salesforce, Unity"
+                            className="input-field py-2 text-xs"
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleStartInterview(); }}
+                          />
                         </div>
                       )}
                     </div>
+                  ) : (
+                    <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-xs text-blue-700">
+                      <span className="font-semibold block mb-0.5">Behavioral / HR Round Selected</span>
+                      <span>The focus topic is automatically configured to evaluate soft skills, leadership, and HR scenarios.</span>
+                    </div>
+                  )}
 
-                    {selectedTopic === 'Other (Custom Topic)' && (
-                      <div className="pt-2">
-                        <label className="text-[11px] font-semibold text-slate-600 mb-1 block">Enter Custom Topic *</label>
-                        <input
-                          type="text"
-                          value={customTopic}
-                          onChange={(e) => setCustomTopic(e.target.value)}
-                          placeholder="e.g. Flutter, Go, Rust, SAP, Salesforce, Unity"
-                          className="input-field py-2 text-xs"
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleStartInterview(); }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-xs text-blue-700">
-                    <span className="font-semibold block mb-0.5">Behavioral / HR Round Selected</span>
-                    <span>The focus topic is automatically configured to evaluate soft skills, leadership, and HR scenarios.</span>
-                  </div>
-                )}
-
-                <button 
-                  onClick={handleStartInterview}
-                  disabled={isStarting}
-                  className="btn-primary w-full py-2.5 text-xs font-semibold"
-                >
-                  {isStarting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Starting Session...
-                    </span>
-                  ) : 'Start Interview Round'}
-                </button>
+                  <button 
+                    onClick={handleStartInterview}
+                    disabled={isStarting}
+                    className="btn-primary w-full py-2.5 text-xs font-semibold"
+                  >
+                    {isStarting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Starting Session...
+                      </span>
+                    ) : 'Start Interview Round'}
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -576,42 +615,62 @@ const InterviewPage = () => {
             <div className="flex-1 flex flex-col overflow-hidden relative z-10 h-full bg-white">
               
               {/* Header Bar */}
-              <div className="px-6 py-3.5 border-b border-slate-200 bg-white flex justify-between items-center shrink-0 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+              <div className="px-3 sm:px-6 py-3 border-b border-slate-200 bg-white flex justify-between items-center shrink-0 shadow-sm gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <button
+                    onClick={() => setShowHistoryMobile(true)}
+                    className="md:hidden p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
+                    title="View Past Interviews"
+                  >
+                    <History className="w-4 h-4 text-blue-600" />
+                  </button>
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
                     <Bot className="w-4 h-4" />
                   </div>
-                  <div>
-                    <h2 className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                      Mock Interview: {activeSession.topic || 'General Technical'}
+                  <div className="min-w-0">
+                    <h2 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 truncate">
+                      <span className="truncate">{activeSession.topic || 'General Technical'}</span>
                       {activeSession.status === 'active' && (
-                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                       )}
                     </h2>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[11px] text-slate-400">{activeSession.type} Round • AI Corporate Recruiter</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">{activeSession.type} Round</p>
                       {activeSession.status === 'active' && (
-                        <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-100">
-                          Question {Math.min((activeSession.messages || []).filter(m => m.role === 'assistant').length, activeSession.type === 'Behavioral' ? 8 : activeSession.type === 'System Design' ? 7 : 10)} / {activeSession.type === 'Behavioral' ? 8 : activeSession.type === 'System Design' ? 7 : 10}
+                        <span className="text-[9px] sm:text-[10px] bg-blue-50 text-blue-700 font-bold px-1.5 sm:px-2 py-0.5 rounded-full border border-blue-100 shrink-0">
+                          Q{Math.min((activeSession.messages || []).filter(m => m.role === 'assistant').length, activeSession.type === 'Behavioral' ? 8 : activeSession.type === 'System Design' ? 7 : 10)}/{activeSession.type === 'Behavioral' ? 8 : activeSession.type === 'System Design' ? 7 : 10}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {activeSession.status === 'active' && (
-                  <button 
-                    onClick={handleEndInterview} 
-                    disabled={isEnding}
-                    className="btn-secondary text-xs py-1.5 px-3 border-slate-200 hover:border-slate-300"
-                  >
-                    {isEnding ? (
-                      <span className="flex items-center gap-1.5">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" /> Analyzing your performance...
-                      </span>
-                    ) : 'Finish & Grade'}
-                  </button>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {activeSession && (
+                    <button
+                      onClick={(e) => handleDeleteSession(e, activeSession._id)}
+                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 py-1.5 px-2.5 sm:px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title={activeSession.status === 'active' ? 'Discard and delete in-progress interview' : 'Delete interview session'}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{activeSession.status === 'active' ? 'Delete Session' : 'Delete'}</span>
+                    </button>
+                  )}
+
+                  {activeSession.status === 'active' && (
+                    <button 
+                      onClick={handleEndInterview} 
+                      disabled={isEnding}
+                      className="btn-secondary text-xs py-1.5 px-2.5 sm:px-3 border-slate-200 hover:border-slate-300 shrink-0"
+                    >
+                      {isEnding ? (
+                        <span className="flex items-center gap-1">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" /> <span className="hidden sm:inline">Analyzing...</span>
+                        </span>
+                      ) : 'Finish & Grade'}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Chat Message Transcript */}

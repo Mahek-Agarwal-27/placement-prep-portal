@@ -25,6 +25,11 @@ const noteService = {
     const response = await api.delete(`/notes/${id}`);
     return response.data;
   },
+
+  clearAllNotes: async () => {
+    const response = await api.delete('/notes');
+    return response.data;
+  },
 };
 
 export default noteService;

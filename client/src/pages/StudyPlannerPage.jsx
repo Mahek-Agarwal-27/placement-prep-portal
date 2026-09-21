@@ -267,24 +267,24 @@ const StudyPlannerPage = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <Navbar />
 
-        <main className="flex-1 max-w-[1500px] mx-auto w-full p-8 space-y-8">
+        <main className="flex-1 max-w-[1500px] mx-auto w-full p-4 sm:p-6 lg:p-8 pb-24 sm:pb-12 lg:pb-8 space-y-6 sm:space-y-8">
         
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <Calendar className="w-6 h-6 text-blue-600" /> Placement Study Planner
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Organize study tasks, set target completion hours, and maintain daily schedule.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             {tasks.length > 0 && (
               <button 
                 onClick={handleClearAll}
-                className="px-4 py-2.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-100 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-100 transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Clear all study tasks"
               >
                 <Trash2 className="w-4 h-4" /> Clear All
@@ -292,7 +292,7 @@ const StudyPlannerPage = () => {
             )}
             <button 
               onClick={() => { setEditTarget(null); setModalOpen(true); }}
-              className="btn-primary"
+              className="btn-primary py-2 sm:py-2.5"
             >
               <Plus className="w-4 h-4" /> Add Task
             </button>
@@ -300,48 +300,48 @@ const StudyPlannerPage = () => {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Tasks</span>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{stats?.totalTasks ?? 0}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-slate-500 uppercase tracking-wider">Total Tasks</span>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{stats?.totalTasks ?? 0}</p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Pending</span>
-            <p className="text-2xl font-bold text-slate-700 mt-1">{stats?.totalPending ?? 0}</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-slate-500 uppercase tracking-wider">Pending</span>
+            <p className="text-xl sm:text-2xl font-bold text-slate-700 mt-1">{stats?.totalPending ?? 0}</p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-blue-600 uppercase tracking-wider">In Progress</span>
-            <p className="text-2xl font-bold text-blue-600 mt-1">{stats?.totalInProgress ?? 0}</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-blue-600 uppercase tracking-wider">In Progress</span>
+            <p className="text-xl sm:text-2xl font-bold text-blue-600 mt-1">{stats?.totalInProgress ?? 0}</p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-emerald-600 uppercase tracking-wider">Completed</span>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{stats?.totalCompleted ?? 0}</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-emerald-600 uppercase tracking-wider">Completed</span>
+            <p className="text-xl sm:text-2xl font-bold text-emerald-600 mt-1">{stats?.totalCompleted ?? 0}</p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-amber-600 uppercase tracking-wider">Due Soon</span>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{stats?.upcomingCount ?? 0}</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-amber-600 uppercase tracking-wider">Due Soon</span>
+            <p className="text-xl sm:text-2xl font-bold text-amber-600 mt-1">{stats?.upcomingCount ?? 0}</p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-rose-600 uppercase tracking-wider">Overdue</span>
-            <p className="text-2xl font-bold text-rose-600 mt-1">{stats?.overdueCount ?? 0}</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-rose-600 uppercase tracking-wider">Overdue</span>
+            <p className="text-xl sm:text-2xl font-bold text-rose-600 mt-1">{stats?.overdueCount ?? 0}</p>
           </div>
         </div>
 
         {/* Filter Controls */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
+        <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
           <div className="relative w-full md:w-72">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <input 
-              className="input-field pl-9 py-2 text-xs" 
+              className="input-field pl-9 py-2 text-xs w-full" 
               placeholder="Search tasks..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
             <select 
-              className="input-field py-2 text-xs w-auto"
+              className="input-field py-2 text-xs flex-1 sm:flex-initial sm:w-auto"
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
@@ -350,7 +350,7 @@ const StudyPlannerPage = () => {
             </select>
 
             <select 
-              className="input-field py-2 text-xs w-auto"
+              className="input-field py-2 text-xs flex-1 sm:flex-initial sm:w-auto"
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
             >
@@ -359,7 +359,7 @@ const StudyPlannerPage = () => {
             </select>
 
             <select 
-              className="input-field py-2 text-xs w-auto"
+              className="input-field py-2 text-xs flex-1 sm:flex-initial sm:w-auto"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >

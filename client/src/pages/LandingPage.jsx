@@ -45,17 +45,29 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
     }
     navClickTimeoutRef.current = setTimeout(() => {
       isNavClickRef.current = false;
-    }, 450);
+    }, 800);
 
-    // 3. Initiate smooth scroll
-    if (id === 'home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+    // 3. Initiate smooth scroll with exact sticky navbar alignment after drawer unmount
+    setTimeout(() => {
+      if (id === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const element = document.getElementById(id);
+        if (element) {
+          const header = document.querySelector('header');
+          const headerHeight = header ? header.offsetHeight : 64;
+          const elementRect = element.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          // Exact flush alignment with bottom of navbar
+          const targetPosition = Math.max(0, Math.round(absoluteElementTop - headerHeight + 1));
+
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+        }
       }
-    }
+    }, 60);
   };
 
   useEffect(() => {
@@ -175,18 +187,18 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
     >
       {/* ---------- STICKY UNIFIED NAVBAR ACROSS ALL SECTIONS ---------- */}
       <header className="sticky top-0 z-50 w-full bg-white/100 backdrop-blur-xl border-b border-purple-100/80 shadow-xs transition-all duration-300">
-        <div className="max-w-[2000px] mx-auto px-8 lg:px-12 py-4 flex items-center justify-between">
+        <div className="max-w-[2000px] mx-auto px-4 sm:px-8 lg:px-12 py-3 sm:py-4 flex items-center justify-between">
           <div onClick={() => scrollToSection('home')} className="cursor-pointer">
             <Logo
               showText={true}
               subtitle="AI Powered • Resume • DSA • Interviews"
-              className="h-12 w-12"
-              textClassName="text-3xl font-extrabold text-[#000000]"
+              className="h-9 w-9 sm:h-12 sm:w-12"
+              textClassName="text-2xl sm:text-3xl font-extrabold text-[#000000]"
             />
           </div>
 
           {/* Desktop Center Nav Links */}
-          <nav className="hidden md:flex items-center gap-12 font-medium">
+          <nav className="hidden md:flex items-center gap-8 lg:gap-12 font-medium">
             {[
               { id: 'home', label: 'Home' },
               { id: 'features', label: 'Features' },
@@ -196,7 +208,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className={`relative px-1 py-1 text-xl font-bold transition-colors duration-100 cursor-pointer ${activeSection === item.id
+                className={`relative px-1 py-1 text-lg lg:text-xl font-bold transition-colors duration-100 cursor-pointer ${activeSection === item.id
                   ? 'text-[#653AFB]'
                   : 'text-[#1E174B] hover:text-[#653AFB]'
                   }`}
@@ -214,16 +226,16 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
           </nav>
 
           {/* Right Auth Action Buttons */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3 lg:gap-4">
             <button
               onClick={() => openAuthModal('login')}
-              className="px-7 py-2.5 rounded-2xl bg-white border border-[#1E174B]/15 text-[#1E174B] font-semibold text-lg hover:bg-slate-50 hover:border-[#653AFB]/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+              className="px-5 lg:px-7 py-2.5 rounded-2xl bg-white border border-[#1E174B]/15 text-[#1E174B] font-semibold text-base lg:text-lg hover:bg-slate-50 hover:border-[#653AFB]/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
             >
               Log in
             </button>
             <button
               onClick={() => openAuthModal('signup')}
-              className="px-7 py-2.5 rounded-2xl bg-gradient-to-r from-[#653AFB] to-[#7A52FF] text-white font-semibold text-lg transition-all duration-300 shadow-lg shadow-[#653AFB]/20 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#653AFB]/35 active:scale-95 cursor-pointer"
+              className="px-5 lg:px-7 py-2.5 rounded-2xl bg-gradient-to-r from-[#653AFB] to-[#7A52FF] text-white font-semibold text-base lg:text-lg transition-all duration-300 shadow-lg shadow-[#653AFB]/20 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#653AFB]/35 active:scale-95 cursor-pointer"
             >
               Sign up
             </button>
@@ -235,7 +247,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
             className="md:hidden p-2 rounded-2xl bg-purple-100/80 text-[#653AFB] cursor-pointer"
             aria-label="Toggle Menu"
           >
-            {mobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
@@ -245,9 +257,9 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="md:hidden bg-white/98 backdrop-blur-2xl border-b border-purple-100 px-8 py-6 space-y-4 shadow-xl"
+            className="md:hidden bg-white border-b border-purple-100 px-4 py-4 space-y-3 shadow-xl z-50 relative"
           >
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col space-y-1.5 w-full">
               {[
                 { id: 'home', label: 'Home' },
                 { id: 'features', label: 'Features' },
@@ -257,9 +269,9 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className={`text-left px-5 py-3 rounded-2xl font-bold text-base transition-all ${activeSection === item.id
-                    ? 'bg-purple-100/80 text-[#653AFB] dark:bg-purple-900/40 dark:text-[#A78BFA] border-l-4 border-[#653AFB]'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-slate-800'
+                  className={`w-full text-left px-4 py-2.5 rounded-2xl font-bold text-base transition-all cursor-pointer ${activeSection === item.id
+                    ? 'bg-purple-100/80 text-[#653AFB] border-l-4 border-[#653AFB]'
+                    : 'text-slate-700 hover:bg-purple-50'
                     }`}
                 >
                   {item.label}
@@ -267,13 +279,13 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
               ))}
             </div>
 
-            <div className="pt-4 border-t border-purple-100 dark:border-white/10 flex flex-col gap-3">
+            <div className="pt-3 border-t border-purple-100 flex flex-col gap-2.5 w-full">
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   openAuthModal('login');
                 }}
-                className="w-full py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-[#1E174B] dark:text-white font-bold text-sm text-center"
+                className="w-full py-2.5 rounded-2xl bg-slate-100 text-[#1E174B] font-bold text-sm text-center cursor-pointer hover:bg-slate-200 transition-colors"
               >
                 Log in
               </button>
@@ -282,7 +294,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
                   setMobileMenuOpen(false);
                   openAuthModal('signup');
                 }}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#653AFB] to-[#7A52FF] text-white font-bold text-sm text-center shadow-md"
+                className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-[#653AFB] to-[#7A52FF] text-white font-bold text-sm text-center shadow-md cursor-pointer hover:opacity-95 transition-opacity"
               >
                 Sign up
               </button>
@@ -400,15 +412,15 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
         </div>
 
         {/* ---------- HERO SECTION ---------- */}
-        <main className="max-w-[1600px] mx-auto w-full px-8 lg:px-12 py-0 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 items-start z-10 overflow-visible">
+        <main className="max-w-[1600px] mx-auto w-full px-4 sm:px-8 lg:px-12 py-0 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-3 items-start z-10 overflow-visible">
           {/* Left Column: Hero Text */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="lg:col-span-5 flex flex-col justify-start items-start space-y-6 lg:pr-6 pt-14"
+            className="lg:col-span-5 flex flex-col justify-start items-start space-y-4 sm:space-y-6 lg:pr-6 pt-6 sm:pt-10 lg:pt-14"
           >
-            <h1 className="text-5xl sm:text-6xl lg:text-[68px] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#000000FF]">
+            <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-extrabold leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] text-[#000000FF]">
               Prepare Smarter.
               <br />
               <span className="text-[#000000FF]">Get Placed </span>
@@ -417,7 +429,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
               </span>
             </h1>
 
-            <p className="text-lg lg:text-xl leading-relaxed text-[#000000FF] max-w-[560px]">
+            <p className="text-base sm:text-lg lg:text-xl leading-relaxed text-[#000000FF] max-w-[560px]">
               HireNovaAI helps you track your progress, improve consistently, and get
               AI-powered guidance tailored just for your placement journey.
             </p>
@@ -425,7 +437,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
             <div className="pt-1">
               <button
                 onClick={() => openAuthModal('signup')}
-                className="relative group overflow-hidden px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#653AFB] to-[#5229EC] text-white font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-[#653AFB]/25 hover:-translate-y-1 active:translate-y-0 flex items-center gap-3 cursor-pointer"
+                className="relative group overflow-hidden px-7 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-[#653AFB] to-[#5229EC] text-white font-semibold text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-[#653AFB]/25 hover:-translate-y-1 active:translate-y-0 flex items-center gap-3 cursor-pointer"
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 <span className="relative z-10">Get Started for Free</span>
@@ -435,8 +447,8 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
               </button>
             </div>
 
-            <p className="flex items-center gap-2 pt-4 text-base lg:text-lg font-medium text-[#000000]">
-              <span className="text-[#653AFB] text-xl">✦</span>
+            <p className="flex items-center gap-2 pt-2 sm:pt-4 text-sm sm:text-base lg:text-lg font-medium text-[#000000]">
+              <span className="text-[#653AFB] text-lg sm:text-xl">✦</span>
               AI-Powered Tools for Smarter Placement Preparation
             </p>
           </motion.div>
@@ -446,12 +458,12 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-            className="lg:col-span-7 relative w-full h-full min-h-[760px] flex items-center justify-center overflow-visible select-none pt-0 pb-12 -translate-y-12 group/hero-right"
+            className="lg:col-span-7 relative w-full flex items-center justify-center overflow-visible select-none pt-0 pb-4 sm:pb-12 translate-y-0 sm:-translate-y-12 group/hero-right"
           >
-            {/* Orbit Wrapper */}
-            <div className="relative w-full max-w-[760px] h-[760px] flex items-center justify-center overflow-visible mx-auto -translate-y-10 group/orbit">
+            {/* Orbit Wrapper — Uniform Rotating Orbit on Mobile, Tablet & Desktop */}
+            <div className="relative w-[680px] h-[680px] flex items-center justify-center overflow-visible mx-auto scale-[0.50] min-[370px]:scale-[0.54] min-[400px]:scale-[0.60] min-[460px]:scale-[0.68] sm:scale-[0.85] lg:scale-100 origin-center -my-36 min-[370px]:-my-32 min-[400px]:-my-28 min-[460px]:-my-20 sm:my-0 translate-y-0 sm:-translate-y-10 group/orbit">
               {/* Futuristic AI SVG Orbit Paths & Directional Arrows */}
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="flex absolute inset-0 pointer-events-none items-center justify-center">
 
                 {/* Rotating SVG Orbit Circle Layer */}
                 <svg
@@ -513,7 +525,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
 
               {/* Central HireNovaAI Logo Anchor */}
               <motion.div
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                className="flex absolute inset-0 items-center justify-center pointer-events-none"
                 animate={{ y: [0, -4, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
@@ -540,223 +552,53 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
                 </motion.div>
               </motion.div>
 
-              {/* Orbit Wheel for Desktop / Tablet */}
-              <div className="hidden sm:block absolute inset-0 w-full h-full">
+              {/* Rotating Orbit Wheel for All Screen Sizes */}
+              <div className="block absolute inset-0 w-full h-full">
                 {[
-                  // 1. DSA Tracker (angle: 90)
                   {
                     id: 'dsa',
                     angle: 0,
-                    content: (
-                      <div className="bg-white/95 backdrop-blur-[12px] p-4 rounded-2xl border border-white/70 shadow-[0_10px_35px_rgba(101,58,251,0.12)] w-[205px]">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-7 h-7 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-xs shrink-0">
-                            &lt;/&gt;
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-[#6B42FF]">
-                              DSA Tracker
-                            </h4>
-                            <p className="text-[8px] text-[#6B42FF]/60 font-medium">
-                              Smart Coding Progress
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 text-[9px] font-semibold text-[#382E67] mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Topic Wise Progress</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Difficulty Analytics</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>AI Recommendations</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-purple-100">
-                          <p className="text-[9px] font-bold text-[#6B42FF]">
-                            Code Better Every Day 🚀
-                          </p>
-                        </div>
-                      </div>
-                    )
+                    icon: '</>',
+                    title: 'DSA Tracker',
+                    subtitle: 'Smart Coding Progress',
+                    bullets: ['Topic Wise Progress', 'Difficulty Analytics', 'AI Recommendations'],
+                    footer: 'Code Better Every Day 🚀'
                   },
-                  // 2. Study Planner (angle: 225)
                   {
-                    id: "planner",
+                    id: 'planner',
                     angle: 72,
-                    content: (
-                      <div className="bg-white/95 backdrop-blur-[12px] p-4 rounded-2xl border border-white/70 shadow-[0_10px_35px_rgba(101,58,251,0.12)] w-[205px]">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-7 h-7 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-xs shrink-0">
-                            📅
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-[#6B42FF]">
-                              Study Planner
-                            </h4>
-                            <p className="text-[8px] text-[#6B42FF]/60 font-medium">
-                              AI Learning Roadmap
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 text-[9px] font-semibold text-[#382E67] mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Daily Smart Schedule</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Revision Planning</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Streak Tracking</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-purple-100">
-                          <p className="text-[9px] font-bold text-[#6B42FF]">
-                            Stay Consistent Every Day ✨
-                          </p>
-                        </div>
-                      </div>
-                    )
+                    icon: '📅',
+                    title: 'Study Planner',
+                    subtitle: 'Daily Action Items',
+                    bullets: ['Daily Tasks & Goals', 'Structured Roadmaps', 'Time & Habit Tracker'],
+                    footer: 'Stay Consistent & Focused 🔥'
                   },
-                  // 3. Resume Analyzer (angle: 315)
                   {
                     id: 'resume',
                     angle: 144,
-                    content: (
-                      <div className="bg-white/95 backdrop-blur-[12px] p-4 rounded-2xl border border-white/70 shadow-[0_10px_35px_rgba(101,58,251,0.12)] w-[205px]">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-7 h-7 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-xs shrink-0">
-                            📄
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-[#6B42FF]">
-                              Resume Analyzer
-                            </h4>
-                            <p className="text-[8px] text-[#6B42FF]/60 font-medium">
-                              AI Resume Optimization
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 text-[9px] font-semibold text-[#382E67] mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>ATS Score Analysis</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Keyword & Skill Check</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>AI Improvement Tips</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-purple-100">
-                          <p className="text-[9px] font-bold text-[#6B42FF]">
-                            Optimize your resume ✨
-                          </p>
-                        </div>
-                      </div>
-                    )
+                    icon: '📄',
+                    title: 'Resume Analyzer',
+                    subtitle: 'ATS AI Review',
+                    bullets: ['ATS Score Analysis', 'Keyword & Skill Check', 'AI Improvement Tips'],
+                    footer: 'Optimize your resume ✨'
                   },
-                  // 4. AI Notes (angle: 45)
                   {
                     id: 'notes',
                     angle: 216,
-                    content: (
-                      <div className="bg-white/95 backdrop-blur-[12px] p-4 rounded-2xl border border-white/70 shadow-[0_10px_35px_rgba(101,58,251,0.12)] w-[205px]">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-7 h-7 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-xs shrink-0">
-                            📝
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-[#6B42FF]">
-                              AI Notes
-                            </h4>
-                            <p className="text-[8px] text-[#6B42FF]/60 font-medium">
-                              Smart Revision Hub
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 text-[9px] font-semibold text-[#382E67] mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>CS Fundamentals Notes</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>AI Summary & Key Points</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Custom Note Taking</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-purple-100">
-                          <p className="text-[9px] font-bold text-[#6B42FF]">
-                            Learn Smarter, Revise Faster ✨
-                          </p>
-                        </div>
-                      </div>
-                    )
+                    icon: '📝',
+                    title: 'AI Notes',
+                    subtitle: 'Smart Revision Hub',
+                    bullets: ['CS Fundamentals Notes', 'AI Summary & Key Points', 'Custom Note Taking'],
+                    footer: 'Learn Smarter, Revise Faster ✨'
                   },
-                  // 5. AI Mock Interview (angle: 180)
                   {
                     id: 'interview',
                     angle: 288,
-                    content: (
-                      <div className="bg-white/95 backdrop-blur-[12px] p-4 rounded-2xl border border-white/70 shadow-[0_10px_35px_rgba(101,58,251,0.12)] w-[205px]">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-7 h-7 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-xs shrink-0">
-                            🎙️
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-[#6B42FF]">
-                              AI Mock Interview
-                            </h4>
-                            <p className="text-[8px] text-[#6B42FF]/60 font-medium">
-                              Interview Practice
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-[#382E67] space-y-1.5 text-[9px] font-semibold mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Text Interview</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Role Based Questions</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold">✓</span>
-                            <span>Instant AI Feedback</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-purple-100">
-                          <p className="text-[9px] font-bold text-[#6B42FF]">
-                            Practice. Improve. Succeed 🚀
-                          </p>
-                        </div>
-                      </div>
-                    )
+                    icon: '🎙️',
+                    title: 'AI Mock Interview',
+                    subtitle: 'Interview Practice',
+                    bullets: ['Text Interview', 'Role Based Questions', 'Instant AI Feedback'],
+                    footer: 'Practice. Improve. Succeed 🚀'
                   }
                 ].map((card) => {
                   const radius = 240;
@@ -778,36 +620,40 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
                         onClick={() => openAuthModal('signup')}
                         className="transition-all duration-300 hover:scale-[1.03] hover:-translate-y-2 hover:shadow-[0_18px_40px_rgba(101,58,251,0.25)] hover:ring-2 hover:ring-[#653AFB]/35 rounded-2xl cursor-pointer"
                       >
-                        {card.content}
+                        <div className="bg-white/95 backdrop-blur-[12px] p-4 rounded-2xl border border-white/70 shadow-[0_10px_35px_rgba(101,58,251,0.12)] w-[205px]">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-7 h-7 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-xs shrink-0 font-bold">
+                              {card.icon}
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-[#6B42FF]">
+                                {card.title}
+                              </h4>
+                              <p className="text-[8px] text-[#6B42FF]/60 font-medium">
+                                {card.subtitle}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 text-[9px] font-semibold text-[#382E67] mb-3">
+                            {card.bullets.map((b, i) => (
+                              <div key={i} className="flex items-center gap-1.5">
+                                <span className="w-3.5 h-3.5 rounded-full bg-[#6B42FF] text-white flex items-center justify-center text-[7px] font-bold shrink-0">✓</span>
+                                <span>{b}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="pt-2 border-t border-purple-100">
+                            <p className="text-[9px] font-bold text-[#6B42FF]">
+                              {card.footer}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
-              </div>
-
-              {/* Mobile Stacked Fallback Layout */}
-              <div className="sm:hidden flex flex-col items-center gap-4 z-20 w-full pt-4">
-                {[
-                  { title: 'DSA Tracker', text: 'Keep solving problems to improve.', icon: '</>' },
-                  { title: 'Study Planner', text: 'Start your study streak Today !', icon: '📅' },
-                  { title: 'Resume Analyzer', text: 'Ready for ATS Review', icon: '📄' },
-                  { title: 'AI Notes', text: 'CS Fundamentals & AI Summaries', icon: '📝' },
-                  { title: 'AI Mock Interview', text: 'AI Interview & Real-time Feedback', icon: '🎙️' }
-                ].map((c) => (
-                  <div
-                    key={c.title}
-                    onClick={() => openAuthModal('signup')}
-                    className="bg-white/85 backdrop-blur-[12px] p-4 rounded-2xl border border-white/60 shadow-md w-full max-w-[280px] flex items-center gap-3 cursor-pointer"
-                  >
-                    <div className="w-2 h-2 rounded-lg bg-[#6B42FF] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                      {c.icon}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-[#1F174B]">{c.title}</h4>
-                      <p className="text-[10px] text-gray-600 font-medium">{c.text}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
 
             </div>
@@ -816,7 +662,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
       </div>
 
       {/* ---------- FEATURES SECTION (CUSTOM DISTINCT SAAS BACKGROUND) ---------- */}
-      <section id="features" className="scroll-mt-20 relative z-10 overflow-hidden pt-12 pb-20 bg-gradient-to-b from-[#F5F2FE] via-[#EDE7FE] to-[#F3EEFE] dark:from-[#0B1020] dark:via-[#0F1528] dark:to-[#0B1020]">
+      <section id="features" className="scroll-mt-16 sm:scroll-mt-20 relative z-10 overflow-hidden pt-6 sm:pt-14 pb-16 sm:pb-20 bg-gradient-to-b from-[#F5F2FE] via-[#EDE7FE] to-[#F3EEFE] dark:from-[#0B1020] dark:via-[#0F1528] dark:to-[#0B1020]">
         {/* Features Section Ambient Glow Accents */}
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] rounded-full blur-[140px] bg-[#7C3AED]/12 dark:bg-[#7C3AED]/16" />
@@ -862,7 +708,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
       </section>
 
       {/* ---------- ABOUT SECTION (CUSTOM EDITORIAL SAAS BACKGROUND) ---------- */}
-      <section id="about" className="scroll-mt-20 relative z-10 overflow-hidden pt-12 pb-20 bg-gradient-to-b from-[#F3EEFE] via-[#EBE4FC] to-[#F5F0FF] dark:from-[#0B1020] dark:via-[#131B30] dark:to-[#0B1020]">
+      <section id="about" className="scroll-mt-16 sm:scroll-mt-20 relative z-10 overflow-hidden pt-6 sm:pt-14 pb-16 sm:pb-20 bg-gradient-to-b from-[#F3EEFE] via-[#EBE4FC] to-[#F5F0FF] dark:from-[#0B1020] dark:via-[#131B30] dark:to-[#0B1020]">
         {/* About Section Ambient Glow Accents */}
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute top-1/3 right-10 w-[650px] h-[650px] rounded-full blur-[140px] bg-[#8B5CF6]/15 dark:bg-[#8B5CF6]/20" />
@@ -933,7 +779,7 @@ const LandingPage = ({ defaultAuthOpen = false, defaultAuthMode = 'login', reset
       </section>
 
       {/* ---------- CONTACT SECTION (CUSTOM CTA FOCUS BACKGROUND) ---------- */}
-      <section id="contact" className="scroll-mt-20 relative z-10 overflow-hidden pt-12 pb-20 bg-gradient-to-b from-[#F5F0FF] via-[#EBE2FC] to-[#E5D8FD] dark:from-[#0B1020] dark:via-[#11162A] dark:to-[#090C16]">
+      <section id="contact" className="scroll-mt-16 sm:scroll-mt-20 relative z-10 overflow-hidden pt-6 sm:pt-14 pb-16 sm:pb-20 bg-gradient-to-b from-[#F5F0FF] via-[#EBE2FC] to-[#E5D8FD] dark:from-[#0B1020] dark:via-[#11162A] dark:to-[#090C16]">
         {/* Contact Section Ambient Glow Accents */}
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[150px] bg-[#653AFB]/15 dark:bg-[#653AFB]/20" />

@@ -37,6 +37,7 @@ const NotesPage = () => {
   const [tags, setTags] = useState('');
   
   const [isSaving, setIsSaving] = useState(false);
+  const [showNotesMobile, setShowNotesMobile] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -77,6 +78,7 @@ const NotesPage = () => {
     setContent(note.content);
     setFolder(note.folder || 'General');
     setTags(note.tags ? note.tags.join(', ') : '');
+    setShowNotesMobile(false);
   };
 
   const handleCreateNew = () => {
@@ -85,6 +87,7 @@ const NotesPage = () => {
     setContent('');
     setFolder('General');
     setTags('');
+    setShowNotesMobile(false);
   };
 
   const handleSave = async (e) => {
@@ -121,15 +124,30 @@ const NotesPage = () => {
 
   const handleDelete = async (id, e) => {
     if (e) e.stopPropagation();
-    if (!window.confirm('Delete this note?')) return;
+    if (!window.confirm('Are you sure you want to delete this note?')) return;
     try {
       await noteService.deleteNote(id);
       if (activeNote?._id === id) {
         handleCreateNew();
       }
-      fetchNotes();
+      fetchNotes(false);
     } catch (e) {
       console.error(e);
+      setError('Failed to delete note.');
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (notes.length === 0) return;
+    if (!window.confirm('Are you sure you want to delete ALL saved notes? This action cannot be undone.')) return;
+    try {
+      await noteService.clearAllNotes();
+      handleCreateNew();
+      setNotes([]);
+      fetchNotes(false);
+    } catch (e) {
+      console.error('Failed to clear notes:', e);
+      setError('Failed to clear all notes.');
     }
   };
 
@@ -228,17 +246,36 @@ const NotesPage = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Navbar />
 
-        <main className="flex-1 flex overflow-hidden">
+        <main className="flex-1 flex overflow-hidden relative">
           
+          {/* Mobile Notes Backdrop Overlay */}
+          {showNotesMobile && (
+            <div 
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+              onClick={() => setShowNotesMobile(false)}
+            />
+          )}
+
           {/* Left Sidebar: Folder & Note List */}
-          <aside className="w-80 border-r border-purple-200/70 bg-white flex flex-col shrink-0 overflow-y-auto">
+          <aside className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-white border-r border-purple-200/70 flex flex-col shrink-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0 overflow-y-auto ${
+            showNotesMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
+          }`}>
             <div className="p-4 border-b border-purple-100 space-y-3">
-              <button 
-                onClick={handleCreateNew} 
-                className="w-full py-2.5 px-4 rounded-2xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> New AI Note
-              </button>
+              <div className="flex items-center justify-between gap-2">
+                <button 
+                  onClick={() => { handleCreateNew(); setShowNotesMobile(false); }} 
+                  className="flex-1 py-2.5 px-4 rounded-2xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> New AI Note
+                </button>
+                <button
+                  onClick={() => setShowNotesMobile(false)}
+                  className="md:hidden p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                  title="Close notes"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
@@ -252,7 +289,20 @@ const NotesPage = () => {
             </div>
             
             <div className="p-4 flex-1">
-              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Your Saved Notes</h3>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                  Your Saved Notes {notes.length > 0 && `(${notes.length})`}
+                </h3>
+                {notes.length > 0 && (
+                  <button
+                    onClick={handleClearAll}
+                    className="text-[11px] font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1 cursor-pointer transition-colors px-1.5 py-0.5 rounded-md hover:bg-rose-50"
+                    title="Delete all saved notes"
+                  >
+                    <Trash2 className="w-3 h-3" /> Clear All
+                  </button>
+                )}
+              </div>
               {loading ? (
                 <div className="text-center py-6 text-xs text-gray-400">Loading notes...</div>
               ) : notes.length === 0 ? (
@@ -260,7 +310,7 @@ const NotesPage = () => {
               ) : (
                 <div className="space-y-2">
                   {notes.map(item => (
-                    <button 
+                    <div
                       key={item._id}
                       onClick={() => handleSelectNote(item)}
                       className={`w-full text-left p-3 rounded-2xl transition-all border flex flex-col gap-1 relative group cursor-pointer ${
@@ -269,21 +319,23 @@ const NotesPage = () => {
                           : 'bg-white border-purple-100 hover:border-purple-200'
                       }`}
                     >
-                      <div className="flex justify-between items-center pr-6">
+                      <div className="flex justify-between items-center pr-7">
                         <span className="text-xs font-bold text-[#1A1A2E] truncate w-full">{item.title}</span>
                       </div>
-                      <div className="text-[10px] text-gray-500 flex justify-between w-full mt-1 font-medium">
+                      <div className="text-[10px] text-gray-500 flex justify-between w-full mt-1 font-medium pr-7">
                         <span className="text-[#6C47FF] font-bold">{item.folder}</span>
                         <span>{new Date(item.updatedAt || item.createdAt).toLocaleDateString()}</span>
                       </div>
                       
-                      <div 
+                      <button 
                         onClick={(e) => handleDelete(item._id, e)}
-                        className="absolute right-2.5 top-2.5 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-rose-600 p-1 cursor-pointer transition-opacity"
+                        className="absolute right-2.5 top-2.5 text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 z-10"
+                        title="Delete this note"
+                        aria-label="Delete note"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </div>
-                    </button>
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -294,49 +346,99 @@ const NotesPage = () => {
           <section className="flex-1 flex flex-col bg-white overflow-hidden">
             
             {/* Editor Header Bar */}
-            <div className="p-4 border-b border-purple-100 flex flex-col sm:flex-row gap-3 justify-between items-center bg-white shadow-xs shrink-0">
-              <input 
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Note Title (e.g. System Design Notes, Distributed Databases)"
-                className="text-base font-extrabold text-[#1A1A2E] outline-none w-full bg-transparent border-b border-transparent focus:border-[#6C47FF] transition-colors py-1"
-              />
+            <div className="p-3 sm:p-4 border-b border-purple-100 flex flex-col gap-2.5 bg-white shadow-xs shrink-0">
+              
+              {/* Mobile Quick Actions & Drawer Trigger (Screens < md) */}
+              <div className="flex items-center justify-between gap-2 md:hidden">
+                <button
+                  onClick={() => setShowNotesMobile(true)}
+                  className="py-1.5 px-2.5 rounded-xl border border-purple-200 text-xs font-bold text-gray-700 flex items-center gap-1.5 hover:bg-purple-50 shrink-0 shadow-2xs"
+                  title="View Saved Notes"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#6C47FF]" /> Notes ({notes.length})
+                </button>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowAiModal(true)}
+                    className="py-1.5 px-2.5 rounded-xl bg-purple-100 text-[#6C47FF] text-xs font-bold hover:bg-purple-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" /> AI Assist
+                  </button>
+
+                  <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="py-1.5 px-3 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save
+                  </button>
+                </div>
+              </div>
+
+              {/* Note Title Input (Full Width Row, so placeholder is completely visible) */}
+              <div className="w-full">
+                <input 
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Note Title (e.g. System Design Notes)"
+                  className="text-sm sm:text-base font-extrabold text-[#1A1A2E] outline-none w-full bg-transparent border-b border-transparent focus:border-[#6C47FF] transition-colors py-1 placeholder:text-gray-400"
+                />
+              </div>
+
+              {/* Secondary Bar: Folder Selector (Mobile + Desktop) & Desktop Actions */}
+              <div className="flex items-center gap-2 flex-wrap justify-between">
                 <select 
                   value={folder}
                   onChange={(e) => setFolder(e.target.value)}
-                  className="py-1.5 px-3 rounded-xl border border-purple-200 text-xs font-bold text-gray-700 outline-none cursor-pointer"
+                  className="py-1.5 px-2.5 rounded-xl border border-purple-200 text-xs font-bold text-gray-700 outline-none cursor-pointer bg-white hover:border-purple-300"
                 >
                   {FOLDERS.map(f => <option key={f}>{f}</option>)}
                 </select>
 
-                <button 
-                  onClick={() => setShowAiModal(true)}
-                  className="py-1.5 px-3 rounded-xl bg-purple-100 text-[#6C47FF] text-xs font-bold hover:bg-purple-200 transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" /> AI Assist
-                </button>
+                {/* Active Note Actions & Desktop Save/AI Assist buttons */}
+                <div className="flex items-center gap-2">
+                  {activeNote && (
+                    <button 
+                      onClick={(e) => handleDelete(activeNote._id, e)}
+                      className="py-1.5 px-3 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      title="Delete this note"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  )}
 
-                <button 
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="py-1.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                >
-                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save
-                </button>
+                  <div className="hidden md:flex items-center gap-2">
+                    <button 
+                      onClick={() => setShowAiModal(true)}
+                      className="py-1.5 px-3 rounded-xl bg-purple-100 text-[#6C47FF] text-xs font-bold hover:bg-purple-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" /> AI Assist
+                    </button>
+
+                    <button 
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="py-1.5 px-4 rounded-xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      Save
+                    </button>
+                  </div>
+                </div>
               </div>
+
             </div>
 
             {/* Note Content Textarea */}
-            <div className="flex-1 p-6 overflow-y-auto bg-purple-50/20">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-purple-50/20">
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your notes, ask AI questions, or draft placement roadmaps here..."
-                className="w-full h-full min-h-[400px] bg-transparent outline-none text-[#1A1A2E] text-xs leading-relaxed resize-none font-mono"
+                className="w-full h-full min-h-[300px] bg-transparent outline-none text-[#1A1A2E] text-xs leading-relaxed resize-none font-mono"
               />
             </div>
 

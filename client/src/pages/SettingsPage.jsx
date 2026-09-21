@@ -120,24 +120,24 @@ ${res.data.resumes.map(r => `- Score: ${r.atsScore}/100 - ${new Date(r.createdAt
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <Navbar />
 
-        <main className="flex-1 max-w-[1500px] mx-auto w-full p-8 space-y-8">
+        <main className="flex-1 max-w-[1500px] mx-auto w-full p-4 sm:p-6 lg:p-8 pb-24 sm:pb-12 lg:pb-8 space-y-6 sm:space-y-8">
         
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-5 sm:pb-6">
           <div>
-            <h1 className="text-2xl font-black text-[#1A1A2E] tracking-tight flex items-center gap-2">
-              <Settings className="w-6 h-6 text-[#6C47FF]" /> Settings & Preferences ⚙️
+            <h1 className="text-xl sm:text-2xl font-black text-[#1A1A2E] tracking-tight flex items-center gap-2">
+              <Settings className="w-6 h-6 text-[#6C47FF]" /> Settings & Preferences
             </h1>
-            <p className="text-sm text-gray-500 font-medium mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">
               Manage your profile preferences, placement target goals, security credentials, and notifications.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             <button 
               onClick={handleExportData}
               disabled={exportingData}
-              className="px-4 py-2.5 rounded-2xl bg-white border border-purple-200 text-[#1A1A2E] text-xs font-bold hover:bg-purple-50 transition-all shadow-xs flex items-center gap-1.5"
+              className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-white border border-purple-200 text-[#1A1A2E] text-xs font-bold hover:bg-purple-50 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-4 h-4 text-[#6C47FF]" />
               {exportingData ? 'Exporting...' : 'Export Data'}
@@ -145,7 +145,7 @@ ${res.data.resumes.map(r => `- Score: ${r.atsScore}/100 - ${new Date(r.createdAt
             <button 
               onClick={handleSaveSettings}
               disabled={savingSettings}
-              className="px-5 py-2.5 rounded-2xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-1.5"
+              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl bg-[#6C47FF] text-white text-xs font-bold hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               {savingSettings ? 'Saving...' : 'Save Changes'}
@@ -169,10 +169,14 @@ ${res.data.resumes.map(r => `- Score: ${r.atsScore}/100 - ${new Date(r.createdAt
 
         {/* 1. Profile Summary Card */}
         <div className="bg-white border border-purple-100 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-[#8B5CF6] text-white text-2xl font-black flex items-center justify-center shadow-md">
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-            </div>
+          <div className="flex items-center gap-4 min-w-0">
+            {user?.avatar ? (
+              <img src={user.avatar} alt={user.name} className="w-16 h-16 rounded-full object-cover border-2 border-[#6C47FF] shadow-md shrink-0 aspect-square" />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-[#8B5CF6] text-white text-2xl font-black flex items-center justify-center shadow-md shrink-0 aspect-square">
+                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+            )}
             <div>
               <h2 className="text-lg font-black text-[#1A1A2E]">{user?.name || 'User Profile'}</h2>
               <p className="text-xs text-gray-500 font-medium">{user?.email || 'user@example.com'}</p>

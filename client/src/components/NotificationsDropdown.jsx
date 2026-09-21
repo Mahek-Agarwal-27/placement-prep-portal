@@ -95,19 +95,27 @@ const NotificationsDropdown = () => {
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/25 backdrop-blur-xs z-40 sm:hidden animate-fade-in"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       {/* Bell Button Trigger */}
       <button
         onClick={() => {
           if (!isOpen) fetchNotifications();
           setIsOpen(!isOpen);
         }}
-        className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors relative"
-        title="Notifications"
+        className="p-2 sm:p-2.5 text-slate-500 hover:text-slate-900 bg-white border border-purple-200/80 hover:bg-purple-50 rounded-2xl transition-all shadow-xs relative flex items-center justify-center cursor-pointer"
+        title="Notification Center"
         aria-label="Toggle notifications menu"
       >
-        <Bell className="w-4 h-4 text-slate-600" />
+        <Bell className="w-4 h-4 text-[#6C47FF]" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-blue-600 text-white font-bold text-[9px] rounded-full flex items-center justify-center border border-white">
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#6C47FF] text-white font-bold text-[9px] rounded-full flex items-center justify-center border-2 border-white shadow-xs">
             {unreadCount}
           </span>
         )}
@@ -115,52 +123,53 @@ const NotificationsDropdown = () => {
 
       {/* Popover Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in origin-top-right">
+        <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-16 sm:top-full mt-2 sm:w-[400px] max-w-[calc(100vw-1.5rem)] sm:max-w-none bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in origin-top-right">
           
           {/* Header */}
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-blue-600" />
-              <h3 className="font-semibold text-xs text-slate-900">Notification Center</h3>
+          <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/80">
+            <div className="flex items-center gap-2 min-w-0">
+              <Bell className="w-4 h-4 text-[#6C47FF] shrink-0" />
+              <h3 className="font-bold text-xs sm:text-sm text-slate-900 whitespace-nowrap">Notifications</h3>
               {unreadCount > 0 && (
-                <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-100">
-                  {unreadCount} unread
+                <span className="bg-purple-50 text-[#6C47FF] text-[10px] font-bold px-2 py-0.5 rounded-full border border-purple-100 whitespace-nowrap shrink-0">
+                  {unreadCount} new
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="text-[11px] font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                  className="text-[11px] font-bold text-[#6C47FF] hover:text-[#5A36EC] flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap px-1 py-0.5 rounded hover:bg-purple-50"
                   title="Mark all as read"
                 >
-                  <CheckCheck className="w-3.5 h-3.5" /> Read all
+                  <CheckCheck className="w-3.5 h-3.5 shrink-0" />
+                  <span>Read all</span>
                 </button>
               )}
               {notifications.length > 0 && (
                 <button
                   onClick={handleClearAll}
-                  className="text-[11px] font-medium text-rose-600 hover:text-rose-700 flex items-center gap-1 transition-colors"
+                  className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap px-1 py-0.5 rounded hover:bg-rose-50"
                   title="Clear all notifications"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Clear all
+                  <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Clear all</span>
                 </button>
               )}
             </div>
           </div>
 
-
           {/* List */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+          <div className="max-h-[65vh] sm:max-h-80 overflow-y-auto divide-y divide-slate-100">
             {loading ? (
-              <div className="p-6 text-center text-xs text-slate-400">Loading notifications...</div>
+              <div className="p-6 text-center text-xs text-slate-400 font-medium">Loading notifications...</div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center space-y-1">
                 <Bell className="w-6 h-6 text-slate-300 mx-auto" />
                 <p className="text-xs font-semibold text-slate-700">No notifications yet</p>
-                <p className="text-[11px] text-slate-400">Activity updates will appear here.</p>
+                <p className="text-[11px] text-slate-400">Activity updates and AI insights will appear here.</p>
               </div>
             ) : (
               notifications.map((item) => {
@@ -170,11 +179,11 @@ const NotificationsDropdown = () => {
                   <div
                     key={item._id}
                     onClick={() => !item.read && handleSingleRead(item._id)}
-                    className={`p-3.5 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer group ${
-                      !item.read ? 'bg-blue-50/30' : ''
+                    className={`p-3 sm:p-3.5 flex items-start gap-2.5 sm:gap-3 hover:bg-slate-50 transition-colors cursor-pointer group ${
+                      !item.read ? 'bg-purple-50/30' : ''
                     }`}
                   >
-                    <div className={`p-2 rounded-lg border shrink-0 ${config.color}`}>
+                    <div className={`p-2 rounded-xl border shrink-0 ${config.color}`}>
                       <Icon className="w-3.5 h-3.5" />
                     </div>
 
@@ -195,7 +204,7 @@ const NotificationsDropdown = () => {
 
                     <button
                       onClick={(e) => handleDelete(e, item._id)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded transition-opacity"
+                      className="opacity-70 sm:opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded transition-opacity cursor-pointer"
                       title="Delete notification"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -208,7 +217,7 @@ const NotificationsDropdown = () => {
 
           {/* Footer */}
           <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[10px] text-slate-400 font-medium">
               HireNovaAI Realtime Notification System
             </span>
           </div>

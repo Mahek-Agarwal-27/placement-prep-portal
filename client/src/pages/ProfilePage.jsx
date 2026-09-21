@@ -268,22 +268,22 @@ const ProfilePage = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <Navbar />
 
-        <main className="flex-1 max-w-[1500px] mx-auto w-full p-8 space-y-8">
+        <main className="flex-1 max-w-[1500px] mx-auto w-full p-4 sm:p-6 lg:p-8 pb-24 sm:pb-12 lg:pb-8 space-y-6 sm:space-y-8">
         
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-5 sm:pb-6">
           <div>
-            <h1 className="text-2xl font-black text-[#1A1A2E] tracking-tight flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-[#1A1A2E] tracking-tight flex items-center gap-2">
               <User className="w-6 h-6 text-[#6C47FF]" /> Student Profile & Photo 👤
             </h1>
-            <p className="text-sm text-gray-500 font-medium mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">
               Upload your profile picture, manage academic details, and view placement readiness.
             </p>
           </div>
 
           <button 
             onClick={() => setIsEditing(true)} 
-            className="px-5 py-2.5 rounded-2xl bg-[#6C47FF] text-white font-bold text-xs hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-2"
+            className="px-4 sm:px-5 py-2.5 rounded-2xl bg-[#6C47FF] text-white font-bold text-xs hover:bg-[#5A36EC] transition-all shadow-md flex items-center gap-2 cursor-pointer"
           >
             <Edit3 className="w-4 h-4" /> Edit Profile & Photo
           </button>
@@ -309,16 +309,16 @@ const ProfilePage = () => {
           
           {/* Avatar & Top Info */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 border-b border-purple-100 pb-6">
-            <div className="flex items-center gap-5">
-              <div className="relative group">
+            <div className="flex items-center gap-5 min-w-0">
+              <div className="relative group shrink-0">
                 {user?.avatar ? (
                   <img 
                     src={user.avatar} 
                     alt={user.name} 
-                    className="w-20 h-20 rounded-full object-cover border-2 border-[#6C47FF] shadow-md"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-[#6C47FF] shadow-md shrink-0 aspect-square"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-full bg-[#8B5CF6] text-white font-black text-2xl flex items-center justify-center shadow-md">
+                  <div className="w-20 h-20 rounded-full bg-[#8B5CF6] text-white font-black text-2xl flex items-center justify-center shadow-md shrink-0 aspect-square">
                     {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
@@ -434,22 +434,24 @@ const ProfilePage = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Photo Upload Section */}
-                <div className="flex items-center gap-4 p-4 bg-purple-50/60 rounded-2xl border border-purple-100">
-                  {avatar ? (
-                    <img src={avatar} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-[#6C47FF]" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-[#8B5CF6] text-white font-bold flex items-center justify-center text-xl">
-                      {name ? name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
-                  <div className="space-y-1.5 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-purple-50/60 rounded-2xl border border-purple-100">
+                  <div className="shrink-0 flex items-center">
+                    {avatar ? (
+                      <img src={avatar} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-[#6C47FF] shrink-0 aspect-square" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-[#8B5CF6] text-white font-bold flex items-center justify-center text-xl shrink-0 aspect-square">
+                        {name ? name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 flex-1 min-w-0">
                     <label className="block text-xs font-bold text-[#1A1A2E]">Profile Picture</label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <input 
                         type="file" 
                         accept="image/*" 
                         onChange={handleImageUpload}
-                        className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#6C47FF] file:text-white hover:file:bg-[#5A36EC] cursor-pointer"
+                        className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#6C47FF] file:text-white hover:file:bg-[#5A36EC] cursor-pointer max-w-full"
                       />
                       {avatar && (
                         <button

@@ -35,6 +35,11 @@ const userService = {
     const response = await api.post('/users/study-session', data);
     return response.data;
   },
+
+  resetAnalytics: async (options = {}) => {
+    const response = await api.post('/analytics/reset', options);
+    return response.data;
+  },
 };
 
 export default userService;
